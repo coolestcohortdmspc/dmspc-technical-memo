@@ -19,11 +19,9 @@
 
 \section*{Abstract}
 
-Test version control! -- remove later
-
 *\textbf{Note for the team}, so far I have just been following the format of the example paper and using similar sentence structure/wording
 
-This memo documents real-time data transport architecture, developed by the NRAO, and demonstrates a possible implementation in the future ngRadar system (though it is intended to be implemented into any NRAO observing system using real-time data). The architecture is entirely event-driven while also persisting each event in a central database, with every event visible to users on a public website. The prototype has completed theoretical development, and has not been tested with a real observation at the time of writing. 
+This memo documents real-time data transport architecture, developed by the NRAO's 2026 DMS Prototyping Cohort, and demonstrates a possible implementation in the future ngRadar system (though it is intended to be implemented into any NRAO observing system using real-time data). The architecture is entirely event-driven while also persisting each event in a central database, with every event visible to users on a public website. The prototype has completed theoretical development, and has not been tested with a real observation at the time of writing. 
 
 *\textbf{Desmond's abstract:}
 \*Interferometers used in Radio Astronomy require real time communication between antenna sites and new instruments, such as the ngVLA, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
@@ -32,14 +30,11 @@ This software documents a real-time data transport architecture developed by the
 %=====================================================================================
 
 \section{Introduction}
-The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During systems testing, scientific staff had to had communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
+The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During systems testing, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
-The Real-Time Data Transport Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents a viable software stack for radio telescopes that could benefit from having access to quick-look products during observations. Alhtough this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's usecase on.
+The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents a an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Alhtough this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
 
-This memo details the design rational behind the chosen software stack, the system architecture which utilizes the software stack, the software components used to enable system communiction, and other dependencies required for the Software Prototype to function.
-
-This memo documents the system architecture which utilizes the software stack (Section II), the software stack (Section III), the dependencies of the stack (Section IV), and records the design decisions that set the technologies of the prototype (Section V).
-
+This memo details the design decisions (Section V), system architecture decisions (Section II), software components and technologies chosen (Section III), and other dependencies required by the System Communication Prototype (Section IV).
 
 %=====================================================================================
 
