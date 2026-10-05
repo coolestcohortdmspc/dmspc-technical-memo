@@ -149,7 +149,20 @@ In this software prototype, the team
 
 
 %=====================================================================================
-\section{Conclusion and Further Development}
+\section{Ideas for Future Improvements}
+\begin{itemize}
+  \item Features
+  \begin{itemize}
+    \item Originally, DSOC checks its storage and responds to a single VLBA station if it can accept the incoming e-transfer/expedat raw data transfer/stream. Currently, we have this check occurring simultaneously for all 10 VLBA stations. But we noticed that with 10 consecutive storage check requests, DSOC responds yes without taking into account the requests it’s already approved. With the simultaneous transfers/streams, DSOC storage could potentially go over its storage limit for incoming raw data. It would be beneficial to have some logic built in place for DSOC to keep track of its storage before and after each approval of a requested VLBA site's incoming transfer/stream.
+    \item Currently, on our history events page, you can see that in our sequencing of events, DSOC sends a 'Completed' kafka message 10 times per 10 VLBA sims. It might make more sense to have DSOC wait until it has finished processing all 10 VLBAs raw data, generates its 10 DDM images and stores them to seaweedfs, and then send only one 'Completed' kafka message to be displayed on the UI and communicate to the remote observer that the sequencing of events has finished. 
+  \end{itemize}
+  \item Known issues
+  \begin{itemize}
+    \item The submit new waveform button currently unlocks after the first of several concurrent VLBA transfers completes, rather than after all of them have completed.
+    \item Part way through the prototype's development we had a big refactor to decouple our UI from the postgres database and convert the UI to be completely event-driven by relying on kafka for updates to the UI rather than polling the database to update the UI. Before this refactor, we had built certain safeguards to ensure that the website, backend processes, and our docker ecosystem could fail gracefully and print helpful logs for debugging and restarting, rather than failing and exiting. We have not tested any of the graceful failure scenarious since the UI Bridge refactor, so it would be valuable to go back through those scenarious and ensure that the prototype fails gracefully. 
+    \item Our kafka produce() function in utils.py constructs a new confluent kafka Producer on every call without ever closing it, leaking a background thread per call. @nicole - delete this if you have a fix in place!!
+  \end{itemize}
+\end{itemize}
 
 %=====================================================================================
 \section{References}
