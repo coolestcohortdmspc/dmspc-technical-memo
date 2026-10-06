@@ -20,12 +20,13 @@
 
 \section*{Abstract}
 
-\*Interferometers used in Radio Astronomy require real time communication between antenna sites and new instruments, such as the ngVLA, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
-This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system, but could be implemented into any radio astronomy observatory. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically located sites. 
+Interferometers used in Radio Astronomy require real time communication between antenna sites and new instruments, such as the ngVLA, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
+This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system, but could be implemented into any radio astronomy observatory. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
 
 %=====================================================================================
 
 \section{Introduction}
+
 The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
 The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
@@ -94,6 +95,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 \url{https://nrao.atlassian.net/wiki/spaces/DOB/embed/1146814469}
 \url{https://nrao.atlassian.net/wiki/x/C4DlUQ}
+
 \subsection*{Docker}
 
   In this software prototype, Docker containers were used to store and run all of the major software components, which is known as a microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could be changed without altering another container, it helped separate the codebase into smaller pieces, and made it easier to replace individual services in our code with alternatives if the team decided changes were necessary. Microservices also improved fault tolerance for the website - during testing, there were several times we noticed that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
@@ -109,7 +111,9 @@ This memo details the design decisions (Section V), system architecture decision
 
   There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics, messages are stored in partitions until reception is confirmed or for a fixed number of days, and "consumers" are used to receive messages from these topics. The initial time to implement a Kafka messaging setup is significant, and it can use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. RabbitMQ was the second message broker the team investigated, and it has the lowest message latency compared to the other two options. It has the lowest server memory requirement, since messages are deleted immediately after consumption, but still includes protection against data loss. Additionally, RabbitMQ has a significantly simpler setup than Kafka, and includes a management UI. Apache Pulsar is the newest of the three message brokers, and it attempts to combine the features of Kafka and RabbitMQ. During the transmission/reception process, messages are not stored in data brokers, they are immediately sent to consumers. Developers do have an option of setting up data storage within the "BookKeeper", so messages can still be retained for a fixed time if desired, and without using data broker resources. Pulsar is capable of balancing loads between brokers, and is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, and has less documentation avaliable because it is newer. 
 
-  Ultimately the team decided to select Kafka because of its extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. Kafka also had numerous options for online broker hosting, and the team initially set up the website to work with Confluent Cloud, but later moved to using locally hosted Kafka brokers due to lower cost and more control over the data on those brokers.
+  Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
+  
+  While Kafka has numerous options for online broker hosting (the team initially set up the website to work with Confluent Cloud), the team decided on locally hosted Kafka brokers due to lower cost and more control over the data on those brokers.
 
 \url{https://nrao.atlassian.net/wiki/x/HYA-Pg}
 
@@ -172,14 +176,20 @@ This memo details the design decisions (Section V), system architecture decision
 
 %=====================================================================================
 \section{Ideas for Future Improvements}
+
 \begin{itemize}
   \item Features
   \begin{itemize}
+    
     \item Originally, DSOC checks its storage and responds to a single VLBA station if it can accept the incoming e-transfer/expedat raw data transfer/stream. Currently, we have this check occurring simultaneously for all 10 VLBA stations. But we noticed that with 10 consecutive storage check requests, DSOC responds yes without taking into account the requests it’s already approved. With the simultaneous transfers/streams, DSOC storage could potentially go over its storage limit for incoming raw data. It would be beneficial to have some logic built in place for DSOC to keep track of its storage before and after each approval of a requested VLBA site's incoming transfer/stream.
+    
     \item Currently, on our history events page, you can see that in our sequencing of events, DSOC sends a 'Completed' kafka message 10 times per 10 VLBA sims. It might make more sense to have DSOC wait until it has finished processing all 10 VLBAs raw data, generates its 10 DDM images and stores them to seaweedfs, and then send only one 'Completed' kafka message to be displayed on the UI and communicate to the remote observer that the sequencing of events has finished. 
+  
   \end{itemize}
+  
   \item Known issues
   \begin{itemize}
+    
     \item The submit new waveform button currently unlocks after the first of several concurrent VLBA transfers completes, rather than after all of them have completed.
     \item Part way through the prototype's development we had a big refactor to decouple our UI from the postgres database and convert the UI to be completely event-driven by relying on kafka for updates to the UI rather than polling the database to update the UI. Before this refactor, we had built certain safeguards to ensure that the website, backend processes, and our docker ecosystem could fail gracefully and print helpful logs for debugging and restarting, rather than failing and exiting. We have not tested any of the graceful failure scenarious since the UI Bridge refactor, so it would be valuable to go back through those scenarious and ensure that the prototype fails gracefully. 
 
