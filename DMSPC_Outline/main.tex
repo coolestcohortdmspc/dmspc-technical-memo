@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{lipsum}
 \usepackage[margin=1in]{geometry} % sets margin size
+\usepackage{indentfirst}
 \usepackage[section]{placeins} % prevents figures from separating from their sections
 \usepackage{hyperref}
 \title{System Communication: Real-Time Data Transport Prototype}
@@ -35,7 +36,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 \section{System Architecture}
 
-\hspace{0.5cm} To enable system communication across different NRAO sites, the software would need to be compatible with various types of computers and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean. 
+  To enable system communication across different NRAO sites, the software would need to be compatible with various types of computers and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean. 
     
   The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. For end-to-end communication online, Apache Kafka was chosen as the message broker because of its reliability, scalability, and use across a wide range of industries. Both locally hosted and web hosted versions of Kafka have been tested in this software prototype, but a locally hosted Kafka message broker was chosen as the more viable option; this option provides a lower cost, increased flexibility, and direct control of data transmitted over the website. To manage server and back-end logic, the Django web framework was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
 
@@ -47,7 +48,7 @@ This memo details the design decisions (Section V), system architecture decision
 
   During the development process, the team needed a way to ensure that this website could be run across multiple machines for local development and debugging, but also perform reliably when run on a cloud-based or locally hosted server. To accomplish this, we used Docker Containers to isolate software components and their dependencies used on our website. This would ensure that any computer which has the Docker Engine - a server responsible for managing the containers - can run this web application and it will perform consistently.
   
-\vspace{5mm} Fig. \ref{fig:step1} shows the first step of the system sequencing. The user submitting a new waveform indicates the beginning of the process, which triggers the initial Kafka message. An arrow from A to B represents a Kafka message produced by A and consumed by B. 
+  Fig. \ref{fig:step1} shows the first step of the system sequencing. The user submitting a new waveform indicates the beginning of the process, which triggers the initial Kafka message. An arrow from A to B represents a Kafka message produced by A and consumed by B. 
 
 \begin{figure}[h!] 
 \centering 
@@ -76,9 +77,12 @@ This memo details the design decisions (Section V), system architecture decision
 
 \subsection*{Django}
 
-Python is widely used across astronomy, all team members had prior experience coding in it, and our website did not require the extra computing speed offered by compiled languages such as C++, so the team chose to use a python framework. There were three frameworks our team investigated - Flask, FastAPI, and Django. 
+  Python is widely used across astronomy, all team members had prior experience coding in it, and our website did not require the extra computing speed offered by compiled languages such as C++, so the team chose to use a python framework. There were three frameworks our team investigated - Flask, FastAPI, and Django. 
+
   Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask does not have built in authentication or adminstrative features, and this prototype website would benefit from non-blocking communication.
+
   FastAPI provides high-speed, and asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework we investigated and includes features such as built in authentication, python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built in functionality, and developers can add libraries with additional features they need.
+
   Django is a framework with a large amount of built in functionality including an adminstrative dashboard, user authentication, HTML form processing, and an object-relational mapper for database interaction [Revisit and add any additional built-in features we used]. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
 
 
@@ -91,12 +95,21 @@ Python is widely used across astronomy, all team members had prior experience co
 \url{https://nrao.atlassian.net/wiki/spaces/DOB/embed/1146814469}
 \url{https://nrao.atlassian.net/wiki/x/C4DlUQ}
 \subsection*{Docker}
-In this software prototype, the team 
+
+  In this software prototype, Docker containers were used to store and run all of the major software components, which is known as a microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could be changed without altering another container, it helped separate the codebase into smaller pieces, and made it easier to replace individual services in our code with alternatives if the team decided changes were necessary. Microservices also improved fault tolerance for the website - during testing, there were several times we noticed that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
+
+  A Docker Compose file was used to create and set-up the containers with all required variables, commands, and network ports during website start up, and a Dockerfile contained all of the commands necessary to build the containers to run on the local computers. The team also made use of a shell script to start and stop all of the website containers at once, control individual containers, or make commands within the containers, such as adding authorized users.  
 
 \url{https://nrao.atlassian.net/wiki/x/AYCtPw}
 \url{https://nrao.atlassian.net/wiki/x/AQDFSg}
 
 \subsection*{Apache Kafka}
+
+  Real time data transmission across geographically separated locations was a defining requirement of our software prototype, and choosing a software tool to accomplish this was a major decision the team needed to make early in the design process. Initially, the team was considering using Socket programming for communication over the internet, but the added complexity of developing our own code to do this reliably with multiple computers led us to investigate using an existing message broker to accomplish this.
+
+  There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics, messages are stored in partitions until reception is confirmed or for a fixed number of days, and "consumers" are used to receive messages from these topics. The initial time to implement a Kafka messaging setup is significant, and it can use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. RabbitMQ was the second message broker the team investigated, and it has the lowest message latency compared to the other two options. It has the lowest server memory requirement, since messages are deleted immediately after consumption, but still includes protection against data loss. Additionally, RabbitMQ has a significantly simpler setup than Kafka, and includes a management UI. Apache Pulsar is the newest of the three message brokers, and it attempts to combine the features of Kafka and RabbitMQ. During the transmission/reception process, messages are not stored in data brokers, they are immediately sent to consumers. Developers do have an option of setting up data storage within the "BookKeeper", so messages can still be retained for a fixed time if desired, and without using data broker resources. Pulsar is capable of balancing loads between brokers, and is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, and has less documentation avaliable because it is newer. 
+
+  Ultimately the team decided to select Kafka because of its extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. Kafka also had numerous options for online broker hosting, and the team initially set up the website to work with Confluent Cloud, but later moved to using locally hosted Kafka brokers due to lower cost and more control over the data on those brokers.
 
 \url{https://nrao.atlassian.net/wiki/x/HYA-Pg}
 
@@ -117,6 +130,8 @@ In this software prototype, the team
 
 \subsection*{ExpeDat}
 
+  ExpeDat is the second data transfer tool the team evaluated for use in this website, and it was developed by Data Expedition Incorporated. Unlike most of the other code in this website, it is proprietary and uses the Multipurpose Transcation Protocol, a data transport protocol which can adapt to changes in network conditions, and is based on the open source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers, and the is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
+
 \subsection*{SeaweedFS}
 
 \url{https://nrao.atlassian.net/wiki/x/GgAMRQ}
@@ -124,6 +139,8 @@ In this software prototype, the team
 \url{https://nrao.atlassian.net/wiki/x/CYBfRw}
 
 \subsection*{DigitalOcean}
+
+  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted from NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide.
 
 \url{https://nrao.atlassian.net/wiki/x/BoDsT}
 
@@ -165,7 +182,7 @@ In this software prototype, the team
   \begin{itemize}
     \item The submit new waveform button currently unlocks after the first of several concurrent VLBA transfers completes, rather than after all of them have completed.
     \item Part way through the prototype's development we had a big refactor to decouple our UI from the postgres database and convert the UI to be completely event-driven by relying on kafka for updates to the UI rather than polling the database to update the UI. Before this refactor, we had built certain safeguards to ensure that the website, backend processes, and our docker ecosystem could fail gracefully and print helpful logs for debugging and restarting, rather than failing and exiting. We have not tested any of the graceful failure scenarious since the UI Bridge refactor, so it would be valuable to go back through those scenarious and ensure that the prototype fails gracefully. 
-    \item Our kafka produce() function in utils.py constructs a new confluent kafka Producer on every call without ever closing it, leaking a background thread per call. @nicole - delete this if you have a fix in place!!
+
   \end{itemize}
 \end{itemize}
 
