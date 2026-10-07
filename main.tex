@@ -37,7 +37,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 \section{System Architecture}
 
-  To enable system communication across different NRAO sites, the software would need to be compatible with various types of computers and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean. 
+  To enable system communication across different NRAO sites, the software would need to be compatible with various types of computers and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
   The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. For end-to-end communication online, Apache Kafka was chosen as the message broker because of its reliability, scalability, and use across a wide range of industries. Both locally hosted and web hosted versions of Kafka have been tested in this software prototype, but a locally hosted Kafka message broker was chosen as the more viable option; this option provides a lower cost, increased flexibility, and direct control of data transmitted over the website. To manage server and back-end logic, the Django web framework was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
 
@@ -53,21 +53,21 @@ This memo details the design decisions (Section V), system architecture decision
 
 \begin{figure}[h!] 
 \centering 
-\includegraphics[width=0.65\columnwidth]{Step1_sequence.png} 
+\includegraphics[width=0.65\columnwidth]{figures/Step1_sequence.png} 
     \caption{*\textbf{Note for team}: the quality of this image is bad. We can replace it once we agree if we want to use it!} 
     \label{fig:step1}
 \end{figure}
 
 \begin{figure}[h!] 
 \centering 
-\includegraphics[width=0.65\columnwidth]{Step2_sequence.png} 
+\includegraphics[width=0.65\columnwidth]{figures/Step2_sequence.png} 
     \caption{*\textbf{Note for team}: the quality of this image is bad. We can replace it once we agree if we want to use it!} 
     \label{fig:step2}
 \end{figure}
 
 \begin{figure}[h!] 
 \centering 
-\includegraphics[width=0.65\columnwidth]{Step3_sequence.png} 
+\includegraphics[width=0.65\columnwidth]{figures/Step3_sequence.png} 
     \caption{*\textbf{Note for team}: the quality of this image is bad. We can replace it once we agree if we want to use it!} 
     \label{fig:step3}
 \end{figure}
@@ -111,7 +111,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics. Messages are stored in these topics in subgroups called partitions, either until consumption is confirmed or for a fixed number of days. "Consumers" are used to receive messages from these topics. The initial time to implement a basic Kafka messaging setup was minimal; however, scaling up the system and debugging errors adds significant complexity. Kafka can also use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. 
 
-RabbitMQ was also considered as a broker option; it has the lowest message latency and lowest server memory requirement compared to the other two options, and is a significantly simpler system. This option was not chosen due to RabbitMQ's push model (producer controls the flow of messages and can overwhelm consumers) and the difficulty in scaling up the system. Apache Pulsar, the third option considered, is the newest of the three message brokers and attempts to combine the features of Kafka and RabbitMQ. Pulsar is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, has a higher message latency due to the extra storage layers, and has less documentation avaliable because it is newer.
+RabbitMQ was also considered as a broker option; it has the lowest message latency and lowest server memory requirement compared to the other two options, and is a significantly simpler system. This option was not chosen due to RabbitMQ's push model (producer controls the flow of messages and can overwhelm consumers) and the difficulty in scaling up the system. Apache Pulsar, the third option considered, is the newest of the three message brokers and attempts to combine the features of Kafka and RabbitMQ. Pulsar is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, has a higher message latency due to the extra storage layers, and has less documentation avaliable.
 
   Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
@@ -124,7 +124,9 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 \subsection*{PostgreSQL}
 
 
-\subsection*{E-Transfer}
+\subsection*{Etransfer}
+
+Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
 
 \url{https://nrao.atlassian.net/wiki/x/GQBoRw}
 
@@ -140,13 +142,15 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
 \subsection*{SeaweedFS}
 
+SeaweedFS is an open source tool that can function as both an object store and a file store.
+
 \url{https://nrao.atlassian.net/wiki/x/GgAMRQ}
 
 \url{https://nrao.atlassian.net/wiki/x/CYBfRw}
 
 \subsection*{DigitalOcean}
 
-  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted from NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. 
+  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted using NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. The team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet to host the portion of our website representing DSOC. DSOC contained the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools, 
 
 \url{https://nrao.atlassian.net/wiki/x/BoDsT}
 
@@ -155,10 +159,11 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 \url{https://nrao.atlassian.net/wiki/x/AYAqUg}
 
 
-\subsection*{Monitoring Tools}
+\subsection*{Performace \& Monitoring Tools}
 
 \subsubsection*{Traefik}
 
+  Traefik is a modern, open-source reverse proxy and load balancer used to route incoming network traffic to the correct backend services. Traefik integrates seamlessly with Docker, automatically discovering new services on the Docker DNS. Traefik also integrates with Let’s Encrypt to automatically generate, manage, and renew SSL/TLS certificates for secure web traffic. For these reasons, the team chose to adopt Traefik to handle exposing the ngRadar website from a Docker container to a public IP address.
 
 
 \subsubsection*{Grafana}
@@ -171,6 +176,7 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
 \subsubsection*{k6}
 
+  Grafana k6 is an open-source performance testing tool used to evaluate the realiability of web applications and more. It offers efficient load testing and a summary of performance metrics printed directly to the console after a test completes, inlcuding p90, p95, and p99 response time quantiles, request throughput, error rate, and more. k6 was a desirable choice for the team because it natively integrated with the already established Prometheus and Grafana tools being used in the prototype. The tests are written in standard JavaScript and the k6 package allows configuration of different load profiles, such as a stress test that gradually ramps up to a set number of users 
 
 
 \subsubsection*{OpenTelemetry}
@@ -209,5 +215,6 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 \end{itemize}
 
 %=====================================================================================
-\section{References}
+\bibliography{zotero-dmspc-technical-memo.bib}
+
 \end{document}
