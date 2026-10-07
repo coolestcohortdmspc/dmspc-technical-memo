@@ -1,6 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage[style=apa]{biblatex}
-\addbibresource{zotero-dmspc-technical-memo.bib}
+\bibliographystyle{plainurl}
 \usepackage{graphicx}
 \usepackage[margin=1in]{geometry} % sets margin size
 \usepackage{indentfirst}
@@ -20,6 +19,8 @@
 
 \section*{Abstract}
 
+\textbf{Ultimate goal of why we built this prototype: to explore feasible design options for ngRadar inter-site data communication, so that the project can make informed architectural decisions about public-network data movement, remote observing, and real-time feedback between GBO, VLBA sites, DSOC, and observers or operators. Also to create a system that could be used in other areas of the observatory, outside just the context of ngRadar}
+
 Interferometers used in Radio Astronomy require real time communication between antenna sites and new instruments, such as the ngVLA, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
 This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system, but could be implemented into any radio astronomy observatory. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
 
@@ -27,19 +28,20 @@ This software documents a real-time data transport architecture developed by the
 
 \section{Introduction} \label{Introduction}
 
+\textbf{Note from Nicole: I want it to be clear that yes, our prototype was devleoped in the context of ngRadar, so we will stick with that terminology, BUT the goal of this prototyping cohort was to investigate tools that could be used for several projects at NRAO.}
 The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
   The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
 
-This memo details the design decisions (Section \ref{Design Decisions}), system architecture decisions (Section \ref{System Architecture}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}). \textbf{Needs Laura's stamp of approval.}
+This memo details the software system architecture (Section \ref{System Architecture}), design decisions (Section \ref{Design Decisions}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}). \textbf{Needs Laura's stamp of approval.}
 
 %=====================================================================================
 
 \section{System Architecture} \label{System Architecture}
 
-  To enable system communication across NRAO sites, the software may need to be compatible with various types of machines and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
+  To enable system communication across NRAO sites, the software may need to be compatible with various types of machines and operating systems. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
-  The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. For end-to-end communication online, Apache Kafka was chosen as the message broker because of its reliability, scalability, and use across a wide range of industries. Both locally hosted and web hosted versions of Kafka have been tested in this software prototype, but a locally hosted Kafka message broker was chosen as the more viable option; this option provides a lower cost, increased flexibility, and direct control of data transmitted over the website. To manage server and back-end logic, the Django web framework was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
+  The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. 
 
   While Apache Kafka is responsible for sending and receiving event notifiers on the website, another software tool must be used to send the actual observation data from the receiving antennas to DSOC. The team investigated two different tools for the movement of observation data. The first tool demonstrated with this software is E-transfer, an open source client/daemon used for high speed data transfers and developed by the Joint Institute for Very Long Baseline Interferometry European Research Infrastructure Consortium (JIVE). Additionally, the team demonstrated ExpeDat, a data transfer tool which utilizes a proprietary file transport protocol based on UDP. ExpeDat was developed by Data Expedition inc, and the software is available as a free trial or for purchase with a one time fee. Due to project time contraints, the team spent 8 weeks using E-transfer for transmitting observation data, but only 2 weeks using ExpeDat. However, data collected on the performance of these tools showed \textbf{[fill in later]} consistently worked faster.
   
@@ -76,15 +78,21 @@ This memo details the design decisions (Section \ref{Design Decisions}), system 
 
 \section{Design Decisions} \label{Design Decisions}
 
+\subsection*{Desktop Application versus Web Application}
+  To enable system communication across NRAO sites, the software needs to be compatible with various types of machines and operating systems. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
+    
+  The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. 
+
 \subsection*{Backend Frameworks}
 
-There were three frameworks our team investigated - Flask, FastAPI, and Django. 
-
-  Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask does not have built in authentication or adminstrative features, and this prototype website would benefit from non-blocking communication.
+There were three frameworks our team investigated - Flask, FastAPI, and Django.
+  Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask also does not have built in authentication or adminstrative features.
 
   FastAPI provides high-speed, and asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework we investigated and includes features such as built in authentication, python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built in functionality, and developers can add libraries with additional features they need.
 
   Django is a framework with a large amount of built in functionality including an adminstrative dashboard, user authentication, HTML form processing, and an object-relational mapper for database interaction [\textbf{Revisit and add any additional built-in features we used}]. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
+
+  After considering all three frameworks, Django was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
 
 
 \subsection*{Event Orchestrators}
@@ -97,8 +105,13 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
   Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
-  While Kafka has numerous options for online broker hosting (the team initially set up the website to work with Confluent Cloud), the team decided on locally hosted Kafka brokers due to lower cost and more control over the data on those brokers.
+  Kafka has numerous options for online broker hosting, and initially the website was set up to work with Confluent Cloud. However, the team chose locally hosted Kafka brokers due to lower cost, increased flexibility, and more control over the data on those brokers.
 
+\subsection*{SQL Database}
+
+\subsection*{File Store}
+
+This software prototype simulates generating DDM images from the VLBA Antenna stations, and storing these images directly in a database as binary files significantly reduces performance and increases database size when large numbers of images need to be produced. Using a dedicated File Store means the database only needs to store text-based information, enabling faster database queries and the ability to serve images using SDKs such as Amazon Boto3. 
 
 \subsection*{Data Movement}
 
@@ -136,34 +149,40 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
 \section{Software Stack} \label{Software Stack}
 
-\subsection*{Django}
+\subsection*{Django-Based Web Application}
 
-  Since we were building a prototype and not concerned with computing speed or processing power, we chose Python as our backend language, with Django as our backend framework since it's a robust and feature-rich framework for building a website quickly. 
-
-
-\subsection*{Containerization}
-
-  The team decided to containerize all backend components and technologies used in this System Communication Prototype using Docker, resulting in approximately 32 containers. We spun up all 32 containers during local development, and also when hosted on the Digital Ocean Droplets on the cloud, with droplets being hosted in data centers in geographically dispersed regions around the world.  
-
-\subsection*{DigitalOcean}
+  Since we were building a prototype and not concerned with computing speed or processing power, we chose Python as our backend language, with Django as our backend framework since it's a robust and feature-rich framework for building a website application quickly. Throughout the development of the prototype, a front-end framework was never selected as Django's Models Views Templates (MVC) was sufficient for the needs of the website. Our frontend is comprised of html, css, and javascript. 
 
 
-\subsection*{Apache Kafka}
+\subsection*{Docker Containerization}
 
- 
+  The team decided to containerize all backend components and technologies used in this System Communication Prototype using Docker, resulting in approximately 32 containers. We spun up all 32 containers during local development, and also when hosted on the Digital Ocean Droplets on the cloud, with droplets being hosted in data centers in geographically dispersed regions around the world. 
+  gbt, dsoc, 10 vlbas, progress_tracker, db_consumer, ui_consumer (runs in a single thread spun up inside the website container), dsoc-volume-init, expedat_server, postgres_exporter, kafka_exporter.
+  Shared volumnes when necessary, shared Docker DNS network bridge - used both locally and when hosted on the DO Droplets. 
+  For this simulation, we had 1 cloud-hosted droplet based in a San Francisco data center which hosted our gbt_sim container, 2 vlba_sim containers, a portainer agent, and a kafka node. We had 1 droplet based in London with 2 vlba sim containers, a portainer agent, and a kafka node. We had 1 droplet based in Bangalore with 2 vlba sims and a portainer agent. We had 1 droplet based in Sydney with 2 vlba sims and a portainer agent. We had 1 droplet based in New York which hosted our dsoc sim, 2 vlba sims, our public facing website, seaweedfs, kafka, posgres database, a central portainer which all portainer agents send their health status to, traefik for routing public internet traffic to and from the docker DNS on the droplets, prometheus, opentelemetry, and grafana. 
 
-\subsection*{PostgreSQL}
+\subsection*{Digital Ocean Droplets}
+  Droplets: 
+
+\subsection*{Apache Kafka Event Messenger}
+
+  kafka-init (used to create our kafka topics if they have not been created before, such as after doing a hard-reset of our local environment, or deploying our kafka nodes to a new machine for the first time), multi-node kafka cluster (1 kRaft controller node, 2 follower nodes) kafka_ui. 4 kafka topics: gbt_notif, vlba_notif, dsoc_notif, progress_tracking (for vlba progress updates of its expedat streaming that the ui_consumer will consume and SSE update the UI progress bars)
+  Our gbt sim, vlba sims, dsoc sim, ui_consumer, and db_consumer all consume kafka event messages. The submit waveform button on our UI publishes a kafka message to the gbt_notif kafka topic, which the gbt sim is subscribed to, to notify the gbt sim that a user has selected a new waveform and so the gbt sim can begin transmitting based on that new waveform. The gbt sim will send a kafka message back to the gbt_notif which the ui_consumer is subscribed to and will update the UI via Server Side Events (SSE) to notify the user that the GBT has started transmitting that new waveform. The vlba sim is subscribed to the gbt_notif as well, and will listen for an explicit kafka message indicating a change in waveform (ignoring all other gbt_notif messages) before proceeding with the rest of the vlba simulated workflow steps. The vlba sim published to the vlba_notif kafka topic which the dsoc_sim is subscribed to. These kafka events initiate logical workflow steps between the vlba sim and the dsoc sim; workflow steps like the vlba sim requesting to stream its raw data to a shared directory that dsoc owns, dsoc performing a storage check and responding yes or no, vlba streams data to dsoc and dsoc validates the expected size of data with the actual size of data it received. After which, dsoc produces kafka messages to the dsoc_notif topic for the following events: generates a fake DDM image, stores the DDM in seaweedfs, notifies the vlba sim stations that they may delete their raw data, and publishes 'Complete', indicating the end of the simulated observation. 
+  The db_consumer and the ui_consumer are also subscribed to all 4 kafka topics. The ui_consumer is responsible for consuming events from the 4 topics and via Server Side Events, update the UI's home page immediately. The db_consumer is also subscribed to all 4 kafka topics and it is responsible for consuming all events, inserting a new record in a master postgres database table for historical persistence of the simulated observation, then SSE updating the UI's history events page. This means that the home page is completely decoupled from a database, instead it relies on kafka for orchestrating its real-time simulated observation events. 
+  We created a templated kafka payload that remains consistent throughout the entire sequencing of events and which gets updated with new metadata that the next step in the sequence will need in order to do its processing. When done, it fills out the kafka template with more data that the next step in the sequence will need to proceed with its sequencing. In total, the kafka metadata that kafka sends from step to step is quite small, about 
 
 
-\subsection*{Etransfer}
+
+\subsection*{PostgreSQL Database}
 
 
-\subsection*{ExpeDat}
+
+\subsection*{ExpeDat Streaming}
 
 
-\subsection*{SeaweedFS}
+\subsection*{SeaweedFS - Object Store}
 
-SeaweedFS is an open source tool that can function as both an object store and a file store.
+SeaweedFS is an open source tool that can function as both an object store and a file store. For the purposes of this prototype, we only explored using Seaweedfs as an object store, rather than a file store, but it does support both. 
 
 \subsubsection*{Traefik}
 
@@ -172,9 +191,11 @@ SeaweedFS is an open source tool that can function as both an object store and a
 
 \subsection*{Performace \& Monitoring Tools}
 
-\subsubsection*{Prometheus}
+Portainer + Portainer Agents, Prometheus, Grafana, k6, OpenTelemetry and Tempo, 
 
-\subsubsection*{Grafana}
+\subsubsection*{Portainer + Portainer Agents}
+
+\subsubsection*{Prometheus}
 
 \subsubsection*{k6}
 
@@ -214,6 +235,6 @@ SeaweedFS is an open source tool that can function as both an object store and a
 \end{itemize}
 
 %=====================================================================================
-\printbibliography
+\bibliography{zotero-dmspc-technical-memo}
 
 \end{document}
