@@ -1,5 +1,6 @@
 \documentclass[12pt]{article}
-\bibliographystyle{plain}
+\usepackage[style=apa]{biblatex}
+\addbibresource{zotero-dmspc-technical-memo.bib}
 \usepackage{graphicx}
 \usepackage[margin=1in]{geometry} % sets margin size
 \usepackage{indentfirst}
@@ -75,41 +76,18 @@ This memo details the design decisions (Section \ref{Design Decisions}), system 
 
 \section{Design Decisions} \label{Design Decisions}
 
+\subsection*{Backend Frameworks}
 
-%=====================================================================================
-
-\section{Software Stack} \label{Software Stack}
-
-\subsection*{Django}
-
-  Python is widely used across astronomy, all team members had prior experience coding in it, and our website did not require the extra computing speed offered by compiled languages such as C++, so the team chose to use a python framework. There were three frameworks our team investigated - Flask, FastAPI, and Django. 
+There were three frameworks our team investigated - Flask, FastAPI, and Django. 
 
   Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask does not have built in authentication or adminstrative features, and this prototype website would benefit from non-blocking communication.
 
   FastAPI provides high-speed, and asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework we investigated and includes features such as built in authentication, python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built in functionality, and developers can add libraries with additional features they need.
 
-  Django is a framework with a large amount of built in functionality including an adminstrative dashboard, user authentication, HTML form processing, and an object-relational mapper for database interaction [Revisit and add any additional built-in features we used]. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
+  Django is a framework with a large amount of built in functionality including an adminstrative dashboard, user authentication, HTML form processing, and an object-relational mapper for database interaction [\textbf{Revisit and add any additional built-in features we used}]. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
 
 
-\url{https://nrao.atlassian.net/wiki/spaces/DOB/pages/1112277010/Back-End+Frameworks?atlOrigin=eyJpIjoiYTk2NmMwOTI0MjYyNGEzNDliZTYzODVmYTc0MmJiMTMiLCJwIjoiYyJ9}
-
-\url{https://nrao.atlassian.net/wiki/spaces/DOB/pages/1114275857/Web+Applications+for+Beginners?atlOrigin=eyJpIjoiZjBlZGU5NWFkNzRjNDFjMThkNWVlMTVjOGZkZjU0NTkiLCJwIjoiYyJ9}
-
-\url{https://nrao.atlassian.net/wiki/x/C4DlUQ}
-
-\url{https://nrao.atlassian.net/wiki/spaces/DOB/embed/1146814469}
-\url{https://nrao.atlassian.net/wiki/x/C4DlUQ}
-
-\subsection*{Docker}
-
-  In this software prototype, Docker containers were used to store and run all of the major software components, which is known as a microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could be changed without altering another container, it helped separate the codebase into smaller pieces, and made it easier to replace individual services in our code with alternatives if the team decided changes were necessary. Microservices also improved fault tolerance for the website - during testing, there were several times we noticed that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
-
-  A Docker Compose file was used to create and set-up the containers with all required variables, commands, and network ports during website start up, and a Dockerfile contained all of the commands necessary to build the containers to run on the local computers. The team also made use of a shell script to start and stop all of the website containers at once, control individual containers, or make commands within the containers, such as adding authorized users.  
-
-\url{https://nrao.atlassian.net/wiki/x/AYCtPw}
-\url{https://nrao.atlassian.net/wiki/x/AQDFSg}
-
-\subsection*{Apache Kafka}
+\subsection*{Event Orchestrators}
 
   Real time data transmission across geographically separated locations was a defining requirement of our software prototype, and choosing a software tool to accomplish this was a major decision the team needed to make early in the design process. Initially, the team was considering using Socket programming for communication over the internet, but the added complexity of developing our own code to do this reliably with multiple computers led us to investigate using an existing message broker to accomplish this.
 
@@ -121,16 +99,10 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
   
   While Kafka has numerous options for online broker hosting (the team initially set up the website to work with Confluent Cloud), the team decided on locally hosted Kafka brokers due to lower cost and more control over the data on those brokers.
 
-\url{https://nrao.atlassian.net/wiki/x/HYA-Pg}
 
-\url{https://nrao.atlassian.net/wiki/x/AYBTUg}
+\subsection*{Data Movement}
 
-\subsection*{PostgreSQL}
-
-
-\subsection*{Etransfer}
-
-Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed \cite{marjolein_verkouter_jive-vlbietransfer_2026}. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
+  Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed \cite{marjolein_verkouter_jive-vlbietransfer_2026}. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
 
 \url{https://nrao.atlassian.net/wiki/x/GQBoRw}
 
@@ -140,21 +112,18 @@ Etransfer is the first data transfer tool tested within this prototype, which wa
 
 \url{https://nrao.atlassian.net/wiki/x/HABRV}
 
-\subsection*{ExpeDat}
-
   ExpeDat is the second data transfer tool the team evaluated for use in this website, and it was developed by Data Expedition Incorporated. Unlike most of the other code in this prototype, it is proprietary and uses the Multipurpose Transcation Protocol (MTP), a data transport protocol which can adapt to changes in network conditions, and is based on the open source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers. It is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
 
-\subsection*{SeaweedFS}
 
-SeaweedFS is an open source tool that can function as both an object store and a file store.
+\subsection*{Cloud-Hosting Solutions}
 
-\url{https://nrao.atlassian.net/wiki/x/GgAMRQ}
-
-\url{https://nrao.atlassian.net/wiki/x/CYBfRw}
-
-\subsection*{DigitalOcean}
-
-  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted using NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. The team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet. Each entry level Droplet offered 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of our website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, the team found that DSOC needed to use this mid-tier droplet. The other portions of our website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets.
+  While developing this website, the team needed a way to test our simulation code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar where our cloud-hosted website could inform a remote viewer of real-time events during an activer observation.
+  
+  One cloud-hosting platform the team considered was Render....
+  
+  Ultimately, the team decided to use Digital Ocean as the cloud-hosting solution because....
+  
+  In a version actually used with telescope hardware, this website would be hosted using NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. The team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet. Each entry level Droplet offered 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of our website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, the team found that DSOC needed to use this mid-tier droplet. The other portions of our website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets.
 \url{https://nrao.atlassian.net/wiki/x/BoDsT}
 
 \url{https://nrao.atlassian.net/wiki/x/BACsTg}
@@ -162,27 +131,56 @@ SeaweedFS is an open source tool that can function as both an object store and a
 \url{https://nrao.atlassian.net/wiki/x/AYAqUg}
 
 
-\subsection*{Performace \& Monitoring Tools}
+
+%=====================================================================================
+
+\section{Software Stack} \label{Software Stack}
+
+\subsection*{Django}
+
+  Since we were building a prototype and not concerned with computing speed or processing power, we chose Python as our backend language, with Django as our backend framework since it's a robust and feature-rich framework for building a website quickly. 
+
+
+\subsection*{Containerization}
+
+  The team decided to containerize all backend components and technologies used in this System Communication Prototype using Docker, resulting in approximately 32 containers. We spun up all 32 containers during local development, and also when hosted on the Digital Ocean Droplets on the cloud, with droplets being hosted in data centers in geographically dispersed regions around the world.  
+
+\subsection*{DigitalOcean}
+
+
+\subsection*{Apache Kafka}
+
+ 
+
+\subsection*{PostgreSQL}
+
+
+\subsection*{Etransfer}
+
+
+\subsection*{ExpeDat}
+
+
+\subsection*{SeaweedFS}
+
+SeaweedFS is an open source tool that can function as both an object store and a file store.
 
 \subsubsection*{Traefik}
 
   Traefik is a modern, open-source reverse proxy and load balancer used to route incoming network traffic to the correct backend services. Traefik integrates seamlessly with Docker, automatically discovering new services on the Docker DNS. Traefik also integrates with Let’s Encrypt to automatically generate, manage, and renew SSL/TLS certificates for secure web traffic. For these reasons, the team chose to adopt Traefik to handle exposing the ngRadar website from a Docker container to a public IP address.
 
 
-\subsubsection*{Grafana}
-
-
+\subsection*{Performace \& Monitoring Tools}
 
 \subsubsection*{Prometheus}
 
-
+\subsubsection*{Grafana}
 
 \subsubsection*{k6}
 
-  Grafana k6 is an open-source performance testing tool used to evaluate the realiability of web applications and more. It offers efficient load testing and a summary of performance metrics printed directly to the console after a test completes, inlcuding p90, p95, and p99 response time quantiles, request throughput, error rate, and more. k6 was a desirable choice for the team because it natively integrated with the already established Prometheus and Grafana tools being used in the prototype. The tests are written in standard JavaScript and the k6 package allows configuration of different load profiles, such as a stress test that gradually ramps up to a set number of users 
+\subsubsection*{OpenTelemetry and Tempo}
 
-
-\subsubsection*{OpenTelemetry}
+\subsubsection*{Grafana}
 
 
 
@@ -216,6 +214,6 @@ SeaweedFS is an open source tool that can function as both an object store and a
 \end{itemize}
 
 %=====================================================================================
-\bibliography{zotero-dmspc-technical-memo.bib}
+\printbibliography
 
 \end{document}
