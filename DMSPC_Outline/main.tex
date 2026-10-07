@@ -29,7 +29,7 @@ This software documents a real-time data transport architecture developed by the
 
 The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
-The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
+  The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
 
 This memo details the design decisions (Section V), system architecture decisions (Section II), software components and technologies chosen (Section III), and other dependencies required by the System Communication Prototype (Section IV).
 
@@ -109,7 +109,9 @@ This memo details the design decisions (Section V), system architecture decision
 
   Real time data transmission across geographically separated locations was a defining requirement of our software prototype, and choosing a software tool to accomplish this was a major decision the team needed to make early in the design process. Initially, the team was considering using Socket programming for communication over the internet, but the added complexity of developing our own code to do this reliably with multiple computers led us to investigate using an existing message broker to accomplish this.
 
-  There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics, messages are stored in partitions until reception is confirmed or for a fixed number of days, and "consumers" are used to receive messages from these topics. The initial time to implement a Kafka messaging setup is significant, and it can use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. RabbitMQ was the second message broker the team investigated, and it has the lowest message latency compared to the other two options. It has the lowest server memory requirement, since messages are deleted immediately after consumption, but still includes protection against data loss. Additionally, RabbitMQ has a significantly simpler setup than Kafka, and includes a management UI. Apache Pulsar is the newest of the three message brokers, and it attempts to combine the features of Kafka and RabbitMQ. During the transmission/reception process, messages are not stored in data brokers, they are immediately sent to consumers. Developers do have an option of setting up data storage within the "BookKeeper", so messages can still be retained for a fixed time if desired, and without using data broker resources. Pulsar is capable of balancing loads between brokers, and is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, and has less documentation avaliable because it is newer. 
+There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics. Messages are stored in these topics in subgroups called partitions, either until consumption is confirmed or for a fixed number of days. "Consumers" are used to receive messages from these topics. The initial time to implement a basic Kafka messaging setup was minimal; however, scaling up the system and debugging errors adds significant complexity. Kafka can also use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. 
+
+RabbitMQ was also considered as a broker option; it has the lowest message latency and lowest server memory requirement compared to the other two options, and is a significantly simpler system. This option was not chosen due to RabbitMQ's push model (producer controls the flow of messages and can overwhelm consumers) and the difficulty in scaling up the system. Apache Pulsar, the third option considered, is the newest of the three message brokers and attempts to combine the features of Kafka and RabbitMQ. Pulsar is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, has a higher message latency due to the extra storage layers, and has less documentation avaliable because it is newer.
 
   Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
@@ -134,7 +136,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 \subsection*{ExpeDat}
 
-  ExpeDat is the second data transfer tool the team evaluated for use in this website, and it was developed by Data Expedition Incorporated. Unlike most of the other code in this website, it is proprietary and uses the Multipurpose Transcation Protocol, a data transport protocol which can adapt to changes in network conditions, and is based on the open source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers, and the is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
+  ExpeDat is the second data transfer tool the team evaluated for use in this website, and it was developed by Data Expedition Incorporated. Unlike most of the other code in this prototype, it is proprietary and uses the Multipurpose Transcation Protocol (MTP), a data transport protocol which can adapt to changes in network conditions, and is based on the open source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers. It is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
 
 \subsection*{SeaweedFS}
 
@@ -144,7 +146,7 @@ This memo details the design decisions (Section V), system architecture decision
 
 \subsection*{DigitalOcean}
 
-  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted from NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide.
+  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted from NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. 
 
 \url{https://nrao.atlassian.net/wiki/x/BoDsT}
 
@@ -157,13 +159,23 @@ This memo details the design decisions (Section V), system architecture decision
 
 \subsubsection*{Traefik}
 
+
+
 \subsubsection*{Grafana}
+
+
 
 \subsubsection*{Prometheus}
 
+
+
 \subsubsection*{k6}
 
+
+
 \subsubsection*{OpenTelemetry}
+
+
 
 %=====================================================================================
 
