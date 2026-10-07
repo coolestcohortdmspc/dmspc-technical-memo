@@ -1,7 +1,6 @@
 \documentclass[12pt]{article}
 \bibliographystyle{plain}
 \usepackage{graphicx}
-\usepackage{lipsum}
 \usepackage[margin=1in]{geometry} % sets margin size
 \usepackage{indentfirst}
 \usepackage[section]{placeins} % prevents figures from separating from their sections
@@ -25,19 +24,19 @@ This software documents a real-time data transport architecture developed by the
 
 %=====================================================================================
 
-\section{Introduction}
+\section{Introduction} \label{Introduction}
 
 The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
   The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
 
-This memo details the design decisions (Section V), system architecture decisions (Section II), software components and technologies chosen (Section III), and other dependencies required by the System Communication Prototype (Section IV).
+This memo details the design decisions (Section \ref{Design Decisions}), system architecture decisions (Section \ref{System Architecture}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}). \textbf{Needs Laura's stamp of approval.}
 
 %=====================================================================================
 
-\section{System Architecture}
+\section{System Architecture} \label{System Architecture}
 
-  To enable system communication across different NRAO sites, the software would need to be compatible with various types of computers and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
+  To enable system communication across NRAO sites, the software may need to be compatible with various types of machines and operating systems used by NRAO personel - Windows, Linux, and MacOS. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
   The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. For end-to-end communication online, Apache Kafka was chosen as the message broker because of its reliability, scalability, and use across a wide range of industries. Both locally hosted and web hosted versions of Kafka have been tested in this software prototype, but a locally hosted Kafka message broker was chosen as the more viable option; this option provides a lower cost, increased flexibility, and direct control of data transmitted over the website. To manage server and back-end logic, the Django web framework was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
 
@@ -74,7 +73,12 @@ This memo details the design decisions (Section V), system architecture decision
 
 %=====================================================================================
 
-\section{Software Stack}
+\section{Design Decisions} \label{Design Decisions}
+
+
+%=====================================================================================
+
+\section{Software Stack} \label{Software Stack}
 
 \subsection*{Django}
 
@@ -126,7 +130,7 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
 \subsection*{Etransfer}
 
-Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
+Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed \cite{marjolein_verkouter_jive-vlbietransfer_2026}. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
 
 \url{https://nrao.atlassian.net/wiki/x/GQBoRw}
 
@@ -150,8 +154,7 @@ SeaweedFS is an open source tool that can function as both an object store and a
 
 \subsection*{DigitalOcean}
 
-  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted using NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. The team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet to host the portion of our website representing DSOC. DSOC contained the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools, 
-
+  While developing this website, the team needed a way to test our code from geographically distributed locations, to simulate how a similar software architecture would be implemented if used with ngRadar. In a version actually used with telescope hardware, this website would be hosted using NRAO servers on site, but for this prototype, the team used DigitalOcean, a cloud hosting platform, which sells access to run code on Virtual Machines, known as "Droplets" at various locations worldwide. The team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet. Each entry level Droplet offered 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of our website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, the team found that DSOC needed to use this mid-tier droplet. The other portions of our website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets.
 \url{https://nrao.atlassian.net/wiki/x/BoDsT}
 
 \url{https://nrao.atlassian.net/wiki/x/BACsTg}
@@ -185,15 +188,13 @@ SeaweedFS is an open source tool that can function as both an object store and a
 
 %=====================================================================================
 
-\section{Dependencies}
-
-
-%=====================================================================================
-\section{Design Decisions}
-
+\section{Dependencies} \label{Dependencies}
 
 %=====================================================================================
-\section{Ideas for Future Improvements}
+
+
+\section{Ideas for Future Improvements} \label{Future}
+%===== Some of these may be resolved in [760] Final Technical Cleanup? Not sure
 
 \begin{itemize}
   \item Features
