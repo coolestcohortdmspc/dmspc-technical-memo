@@ -95,7 +95,7 @@ There were three frameworks our team investigated - Flask, FastAPI, and Django.
   After considering all three frameworks, Django was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
 
 
-\subsection*{Event Orchestrators}
+\subsection*{Event Orchestrators / Message Brokers}
 
   Real time data transmission across geographically separated locations was a defining requirement of our software prototype, and choosing a software tool to accomplish this was a major decision the team needed to make early in the design process. Initially, the team was considering using Socket programming for communication over the internet, but the added complexity of developing our own code to do this reliably with multiple computers led us to investigate using an existing message broker to accomplish this.
 
@@ -109,9 +109,13 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
 \subsection*{SQL Database}
 
-\subsection*{File Store}
+\subsection*{Object Store}
 
-This software prototype simulates generating DDM images from the VLBA Antenna stations, and storing these images directly in a database as binary files significantly reduces performance and increases database size when large numbers of images need to be produced. Using a dedicated File Store means the database only needs to store text-based information, enabling faster database queries and the ability to serve images using SDKs such as Amazon Boto3. 
+  This software prototype simulates generating DDM images from the VLBA Antenna stations, and storing these images directly in a database as binary files significantly reduces performance and increases database size when large numbers of images need to be produced. Using a dedicated Object Store means the database only needs to store text-based information, enabling faster database queries and the ability to serve images using SDKs such as Amazon Boto3. 
+
+    There were three object stores the team investigated: MinIO, Garage, and SeaweedFS. MinIO was first released in 2015 as an open source object store, with features including an administration panel, data encryption and authentication, support for object version control, forward error correction, and is optimized for parallel request handling. However, in late 2025, MinIO shifted to focus on commerical customers, and no longer maintains the open source code. It can still be downloaded from GitHub, although some of its features have been removed, and users must build it from source now. Garage is the second object store we investigated, and it is designed to be simple and use minimal computer resources. It offers a modest feature set, including data compression and backup, Amazon Boto3 integration, and an online admin interface. However, to install and set up the software, it must be built directly from the source code, which would add time and complexity to the project. The last object store the team researched was SeaweedFS, a distributed storage system designed to handle large numbers of files and scale with linear efficiency. Some additional features include data protection, file recovery, efficient metadata management, flexible deployment, and compatibility with multiple storage volumes, including Boto3. The SeaweedFS code comes packaged as a binary file with a built-in installer and a setup guide for Docker, making installation easy. 
+
+  
 
 \subsection*{Data Movement}
 
@@ -148,61 +152,120 @@ This software prototype simulates generating DDM images from the VLBA Antenna st
 %=====================================================================================
 
 \section{Software Stack} \label{Software Stack}
+The System Communication Prototype was developed using a collection of open-source frameworks, containerization tools, messaging infrastructure, data storage technologies, and monitoring services. These technologies support the prototype's web interface, geographically distributed simulators, event-driven communication, data transfer operations, and performance monitoring.
 
 \subsection*{Django-Based Web Application}
+The ngRadar web application was developed using Python and Django, a high-level web framework that provides built-in functionality for URL routing, database integration, user authentication, and server-side HTML rendering. Django follows a Model-View-Template (MVT) architecture, in which models define the application's data structures, views handle incoming HTTP requests and application logic, and templates generate the HTML presented to users. The frontend was implemented using HTML, CSS, JavaScript, and Bootstrap, without introducing a separate frontend framework. Django templates render the application's pages, while JavaScript manages user interactions and dynamically updates the interface. Bootstrap provides reusable styling components and responsive page layouts.
 
-  Since we were building a prototype and not concerned with computing speed or processing power, we chose Python as our backend language, with Django as our backend framework since it's a robust and feature-rich framework for building a website application quickly. Throughout the development of the prototype, a front-end framework was never selected as Django's Models Views Templates (MVC) was sufficient for the needs of the website. Our frontend is comprised of html, css, and javascript. 
+The Django application runs using the Asynchronous Server Gateway Interface (ASGI), which supports asynchronous connections and long-lived HTTP responses. The prototype web application requires two kafka consumers for updating the user interface via Server-Sent Events (SSE) to deliver real-time simulation updates from the backend to connected browsers. One Kafka consumer (UI consumer) runs within the website container, listens for simulation events, and forwards relevant updates to the homepage through SSE. A second Kafka consumer (database consumer) listens for the same events, but also persists a historical record of all events before first forwarding relavant updates to the history events page. This means that the homepage is fully decoupled from the database during an active simulated observation as kafka event messages are forwarded directly to the homepage, and the history events page, while still coupled to the database, does not require constand database polling for new updates to the website. 
 
 
 \subsection*{Docker Containerization}
+Docker is a containerization platform that packages applications and their dependencies into isolated, reproducible execution environments. Each container runs a specific application process or supporting service while sharing the host operating system's kernel.
 
-  The team decided to containerize all backend components and technologies used in this System Communication Prototype using Docker, resulting in approximately 32 containers. We spun up all 32 containers during local development, and also when hosted on the Digital Ocean Droplets on the cloud, with droplets being hosted in data centers in geographically dispersed regions around the world. 
-  gbt, dsoc, 10 vlbas, progress_tracker, db_consumer, ui_consumer (runs in a single thread spun up inside the website container), dsoc-volume-init, expedat_server, postgres_exporter, kafka_exporter.
-  Shared volumnes when necessary, shared Docker DNS network bridge - used both locally and when hosted on the DO Droplets. 
-  For this simulation, we had 1 cloud-hosted droplet based in a San Francisco data center which hosted our gbt_sim container, 2 vlba_sim containers, a portainer agent, and a kafka node. We had 1 droplet based in London with 2 vlba sim containers, a portainer agent, and a kafka node. We had 1 droplet based in Bangalore with 2 vlba sims and a portainer agent. We had 1 droplet based in Sydney with 2 vlba sims and a portainer agent. We had 1 droplet based in New York which hosted our dsoc sim, 2 vlba sims, our public facing website, seaweedfs, kafka, posgres database, a central portainer which all portainer agents send their health status to, traefik for routing public internet traffic to and from the docker DNS on the droplets, prometheus, opentelemetry, and grafana. 
+All major components of the System Communication Prototype were containerized using Docker, including the GBT simulator, ten VLBA station simulators, DSOC simulator, Django website, Kafka infrastructure, PostgreSQL database, SeaweedFS storage services, and monitoring tools. The complete development and deployment environment consisted of approximately 32 containers, depending on the enabled services.
 
-\subsection*{Digital Ocean Droplets}
-  Droplets: 
+Docker Compose was used to define and manage the containerized environment through YAML configuration files. These configurations specify container images, build instructions, environment variables, startup commands, port mappings, volumes, and networking settings. Docker Compose also allowed the team to start, stop, rebuild, and recreate groups of related services during development and deployment.
+
+Containers running on the same Docker host communicated through Docker-managed bridge networks. Docker's internal DNS service allowed containers to reference one another using service names rather than fixed IP addresses. Communication between containers deployed on separate DigitalOcean Droplets used network-accessible host endpoints, protected by DigitalOcean's cloud firewall.
+
+Docker volumes and bind mounts were used to persist application data and share directories between containers when necessary. For example, shared directories supported simulated observation data transfers, while persistent volumes were used for services such as PostgreSQL and SeaweedFS.
+
+\subsection*{DigitalOcean Droplets}
+DigitalOcean Droplets are Linux-based virtual machines hosted on DigitalOcean's cloud infrastructure. Each Droplet provides an independent computing environment with configurable CPU, memory, storage, and networking resources.
+
+The prototype was deployed across five DigitalOcean Droplets located in San Francisco, New York, London, Bangalore, and Sydney. Each Droplet hosted a subset of the Docker containers, distributing the simulated observatory processes across geographically separated cloud environments.
+
+ \begin{itemize}
+  \item The DigitalOcean cloud-hosted container distribution was as follows::
+  \begin{itemize}
+    
+    \item San Francisco: GBT simulator, VLBA-BR, VLBA-MK, a Kafka broker, and a Portainer Agent.
+    \item New York: DSOC simulator, VLBA-KP, VLBA-OV, the Django website, PostgreSQL, SeaweedFS, Kafka infrastructure, ExpeDat server, Traefik, Portainer, and monitoring services.
+    \item London: VLBA-SC, VLBA-HN, a Kafka broker, and a Portainer Agent.
+    \item Bangalore: VLBA-NL, VLBA-FD, and a Portainer Agent.
+    \item Sydney: VLBA-LA, VLBA-PT, and a Portainer Agent.
+
+  \end{itemize}
+\end{itemize}
+
+The New York Droplet hosted the majority of the prototype's centralized services, including the public-facing website, database, object storage, and observability infrastructure. The remaining Droplets primarily hosted the distributed GBT and VLBA simulation containers.
+
+Each Droplet maintained its own Docker environment, with communication between geographically separated services occurring over network-accessible endpoints. This configuration allowed the prototype to execute its simulation processes across multiple cloud regions while using centralized application and storage services. This deployment allowed the prototype's geographically separated simulation components to remain connected through the Kafka messaging infrastructure and ExpeDat data streaming services.
 
 \subsection*{Apache Kafka Event Messenger}
+Apache Kafka is a distributed event-streaming platform used to publish, store, and consume event messages between independent application components. Kafka organizes messages into topics, allowing producers to publish events and consumers to subscribe to the topics relevant to their processing responsibilities.
 
-  kafka-init (used to create our kafka topics if they have not been created before, such as after doing a hard-reset of our local environment, or deploying our kafka nodes to a new machine for the first time), multi-node kafka cluster (1 kRaft controller node, 2 follower nodes) kafka_ui. 4 kafka topics: gbt_notif, vlba_notif, dsoc_notif, progress_tracking (for vlba progress updates of its expedat streaming that the ui_consumer will consume and SSE update the UI progress bars)
-  Our gbt sim, vlba sims, dsoc sim, ui_consumer, and db_consumer all consume kafka event messages. The submit waveform button on our UI publishes a kafka message to the gbt_notif kafka topic, which the gbt sim is subscribed to, to notify the gbt sim that a user has selected a new waveform and so the gbt sim can begin transmitting based on that new waveform. The gbt sim will send a kafka message back to the gbt_notif which the ui_consumer is subscribed to and will update the UI via Server Side Events (SSE) to notify the user that the GBT has started transmitting that new waveform. The vlba sim is subscribed to the gbt_notif as well, and will listen for an explicit kafka message indicating a change in waveform (ignoring all other gbt_notif messages) before proceeding with the rest of the vlba simulated workflow steps. The vlba sim published to the vlba_notif kafka topic which the dsoc_sim is subscribed to. These kafka events initiate logical workflow steps between the vlba sim and the dsoc sim; workflow steps like the vlba sim requesting to stream its raw data to a shared directory that dsoc owns, dsoc performing a storage check and responding yes or no, vlba streams data to dsoc and dsoc validates the expected size of data with the actual size of data it received. After which, dsoc produces kafka messages to the dsoc_notif topic for the following events: generates a fake DDM image, stores the DDM in seaweedfs, notifies the vlba sim stations that they may delete their raw data, and publishes 'Complete', indicating the end of the simulated observation. 
-  The db_consumer and the ui_consumer are also subscribed to all 4 kafka topics. The ui_consumer is responsible for consuming events from the 4 topics and via Server Side Events, update the UI's home page immediately. The db_consumer is also subscribed to all 4 kafka topics and it is responsible for consuming all events, inserting a new record in a master postgres database table for historical persistence of the simulated observation, then SSE updating the UI's history events page. This means that the home page is completely decoupled from a database, instead it relies on kafka for orchestrating its real-time simulated observation events. 
-  We created a templated kafka payload that remains consistent throughout the entire sequencing of events and which gets updated with new metadata that the next step in the sequence will need in order to do its processing. When done, it fills out the kafka template with more data that the next step in the sequence will need to proceed with its sequencing. In total, the kafka metadata that kafka sends from step to step is quite small, about 
+The prototype implemented a three-broker Kafka cluster using KRaft for cluster metadata management, eliminating the need for a separate ZooKeeper service. Kafka brokers were deployed across multiple DigitalOcean Droplets. Supporting containers included Kafka UI, which provides a web interface for inspecting topics and messages, and a Kafka initialization service responsible for creating the required topics during environment startup.
 
+ \begin{itemize}
+  \item Four Kafka topics were used to coordinate the simulated observation workflow:
+  \begin{itemize}
+    \item GBT notif: Events associated with GBT waveform selection and transmission.
+    \item VLBA notif: Events associated with VLBA station processing, storage requests, and data transfers.
+    \item DSOC notif: Events associated with DSOC processing, storage responses, and observation completion.
+    \item progress tracking: Progress updates associated with ExpeDat data streaming.
+  \end{itemize}
+\end{itemize}
+
+The GBT, VLBA, and DSOC simulators communicate by publishing and consuming Kafka messages. For example, submitting a waveform through the Django website publishes an event to GBT notif, which is consumed by the GBT simulator. Subsequent messages coordinate the simulated transmission, VLBA processing, storage negotiation, data transfer, and DSOC processing stages.
+
+Kafka messages use a common payload structure containing observation identifiers, station information, waveform metadata, processing status, timestamps, and other fields relevant to the simulation. As an observation progresses, producers populate additional metadata required by downstream consumers. Kafka message keys identify event types so consumers can distinguish actionable workflow messages from other notifications.
+
+Two additional consumers support the website and database. The UI consumer subscribes to the simulation topics and forwards relevant events to the frontend using SSE, while the database consumer records simulation events in PostgreSQL for historical persistence. Both consumers operate independently of the observatory simulators.
+
+Kafka is used to transmit event notifications and workflow metadata rather than large observation data files. The simulated scientific data is streamed separately using ExpeDat.
 
 
 \subsection*{PostgreSQL Database}
+The prototype uses PostgreSQL as its primary persistent database for application data and historical simulation events. The database runs in a Docker container and is accessed by the Django application through Django's Object-Relational Mapper (ORM).
+
+Django models define the database structures used to represent observations, simulation events, station identifiers, processing statuses, and associated metadata. A dedicated database consumer subscribes to all four Kafka topics and persists simulation events to PostgreSQL as an observation progresses. These records include observation identifiers, event timestamps, station names, waveform selections, processing statuses, data streaming metadata, and latency measurements.
+
+The Django website uses PostgreSQL to populate its historical observation interface. When the history page initially loads, Django queries the database to retrieve previously recorded events. During an active observation, the database consumer persists incoming Kafka events to PostgreSQL before publishing real-time updates through Server-Sent Events (SSE), allowing the history page to display newly recorded events without additional database polling or manual page refreshes.
+
+Both the database consumer and the UI consumer utilize the same SSE broker and shared browser connection to deliver updates to their respective interfaces. However, their data handling differs: the homepage is completely decoupled from PostgreSQL and receives live simulation updates directly from Kafka through the UI consumer, while the history page relies on PostgreSQL for initial data retrieval and requires events to be persisted by the database consumer before corresponding SSE updates are delivered. This ensures that events displayed in the history interface have already been recorded in the database.
 
 
+\subsection*{ExpeDat Data Streaming}
+ExpeDat is a high-performance technology designed to deliver data efficiently across networks, including wide-area connections with significant latency. Expedat supports both file transfer and streaming capabilities with only the difference being the flag used in the CLI command. It provides an alternative to conventional file transfer or streaming mechanisms for applications that require high-throughput movement of large datasets.
 
-\subsection*{ExpeDat Streaming}
+The prototype chose to use ExpeDat's data streaming feature to simulate streaming raw observation data from the VLBA station containers to the DSOC environment. Each VLBA simulator initiates a data streaming process after receiving the appropriate workflow notifications and confirmation that the DSOC environment has sufficient storage capacity.
+
+The streaming process uses ExpeDat client and server components to send simulated observation data to a destination directory accessible to the DSOC simulator. This streaming progress is monitored and published to Kafka through the progress tracking topic, allowing the Django website to display progress updates for the remote observer regarding the individual VLBA stations' streaming progress.
+
+After a data streaming process completes, the DSOC simulator verifies that the received data matches the expected data size before continuing its processing workflow. Kafka handles the control messages coordinating these operations, while ExpeDat handles the actual data streaming.
 
 
 \subsection*{SeaweedFS - Object Store}
+SeaweedFS is an open-source distributed storage system that supports file storage and object storage through an Amazon S3-compatible interface. Its S3 API allows applications to store and retrieve objects using standard object-storage operations.
 
-SeaweedFS is an open source tool that can function as both an object store and a file store. For the purposes of this prototype, we only explored using Seaweedfs as an object store, rather than a file store, but it does support both. 
+The prototype uses SeaweedFS as an object store for the simulated Delay-Doppler Map (DDM) images generated by the DSOC simulator. SeaweedFS runs in the Docker environment and exposes an S3-compatible endpoint for application access.
 
-\subsubsection*{Traefik}
+After the DSOC simulator validates an incoming observation data stream, it generates a simulated DDM image and uploads the image to SeaweedFS. The resulting object key is included in the observation metadata and persisted in PostgreSQL, allowing the Django application to locate and display the generated image for that associated simulated observation event. SeaweedFS is used specifically for storing generated image products, while PostgreSQL maintains the associated structured observation metadata.
 
-  Traefik is a modern, open-source reverse proxy and load balancer used to route incoming network traffic to the correct backend services. Traefik integrates seamlessly with Docker, automatically discovering new services on the Docker DNS. Traefik also integrates with Let’s Encrypt to automatically generate, manage, and renew SSL/TLS certificates for secure web traffic. For these reasons, the team chose to adopt Traefik to handle exposing the ngRadar website from a Docker container to a public IP address.
+\subsubsection*{Traefik Reverse Proxy}
+Traefik is an open-source reverse proxy and load balancer that routes incoming HTTP and HTTPS requests to backend services. It supports Docker integration, allowing routing configurations to reference containerized services.
+
+The prototype uses Traefik to expose the Django website to the public internet. Traefik runs in a Docker container on the New York Droplet and forwards incoming website requests to the Django application running on the internal Docker network.
+
+Traefik provides HTTPS termination and supports automated TLS certificate management through Let's Encrypt. Its Docker integration allows routing rules to be configured using container labels and service definitions.
+
+Traefik also exposes Prometheus-compatible metrics, allowing request traffic and reverse-proxy performance to be monitored through the prototype's observability infrastructure.
 
 
 \subsection*{Performace \& Monitoring Tools}
+The prototype incorporates several monitoring and performance testing technologies to observe container health, collect application and infrastructure metrics, measure website performance, and trace processing operations across the distributed system.
 
-Portainer + Portainer Agents, Prometheus, Grafana, k6, OpenTelemetry and Tempo, 
+Portainer is a container management platform that provides a web-based interface for administering Docker environments. It allows users to inspect running containers, view logs, monitor resource utilization, and manage container lifecycle operations. The prototype uses a centralized Portainer instance hosted on the New York Droplet, with Portainer Agents deployed on the geographically distributed Droplets. The agents provide remote access to their respective Docker environments through the central Portainer interface. This configuration allows the team to inspect container status, restart services, review logs, and monitor Docker resources across the distributed deployment without connecting individually to each Droplet.
 
-\subsubsection*{Portainer + Portainer Agents}
+Prometheus is an open-source monitoring system that collects and stores numerical time-series metrics. It periodically retrieves metrics from configured HTTP endpoints, commonly referred to as scrape targets, and stores them for querying and visualization. The prototype uses Prometheus to collect application, container, and infrastructure performance metrics. Exporters expose measurements from supporting technologies, including Kafka and PostgreSQL, in a format that Prometheus can scrape. The monitoring environment includes exporters for collecting information such as Kafka consumer lag, broker and topic statistics, database activity, and system resource utilization. Additional metrics from instrumented application components and Traefik provide visibility into application and HTTP request behavior. Prometheus serves as a metrics data source for Grafana, where the collected measurements are displayed in monitoring dashboards.
 
-\subsubsection*{Prometheus}
+k6 is an open-source performance testing tool used to generate HTTP traffic and measure application behavior under simulated workloads. Tests are defined using JavaScript and can be configured with virtual users, iterations, execution durations, and performance thresholds. The prototype uses k6 to perform load testing against the Django web application. Test scripts simulate user interactions with the website, including authenticated requests, observation submission operations, and requests to application endpoints. The tests collect measurements such as HTTP request duration, request failure rate, response times, and successful request checks. Configurable thresholds allow the team to evaluate application behavior against defined performance targets. These measurements are used to establish a performance baseline for the website and identify potential bottlenecks as the number of concurrent requests or simulated users increases.
 
-\subsubsection*{k6}
+OpenTelemetry is an open-source observability framework that provides APIs, SDKs, and instrumentation tools for collecting telemetry data from applications. It supports distributed tracing, metrics, and logs. The prototype uses OpenTelemetry to instrument Python application components, including the GBT, VLBA, and DSOC simulators and Kafka-consuming processes. Instrumented operations generate trace spans containing information such as operation names, timestamps, execution durations, Kafka topics, message offsets, and processing statuses. Trace context is propagated through Kafka message headers so that processing operations across different containers can be associated with the same distributed trace. This allows individual workflow operations to be examined across producer and consumer boundaries. An OpenTelemetry Collector runs as a Docker service and receives telemetry exported by instrumented components using the OpenTelemetry Protocol (OTLP). The collector processes the incoming telemetry and forwards trace data to Grafana Tempo. Tempo is a distributed tracing backend that stores and retrieves traces. It is integrated with Grafana, allowing the team to inspect individual spans, trace execution paths, identify failed operations, and analyze processing durations across the simulated observation workflow.
 
-\subsubsection*{OpenTelemetry and Tempo}
-
-\subsubsection*{Grafana}
-
+Grafana is an open-source visualization and observability platform used to build dashboards from metrics, logs, and tracing data sources. It supports integrations with Prometheus for time-series metrics and Tempo for distributed tracing. The prototype uses Grafana as its central interface for viewing system performance and observability data. Grafana dashboards display metrics collected by Prometheus, including infrastructure resource utilization, Kafka activity, HTTP request performance, and application measurements. Grafana is also connected to Tempo, allowing distributed traces generated by OpenTelemetry instrumentation to be inspected through the same interface. Trace views provide visibility into processing operations performed by the individual simulators and Kafka consumers. Custom dashboards organize these measurements by application component, providing a centralized view of the prototype's operational behavior and supporting performance analysis during development and testing.
 
 
 %=====================================================================================
