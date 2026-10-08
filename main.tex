@@ -4,6 +4,8 @@
 \usepackage[margin=1in]{geometry} % sets margin size
 \usepackage{indentfirst}
 \usepackage[section]{placeins} % prevents figures from separating from their sections
+\usepackage{array} % to use table
+\usepackage{longtable}
 \usepackage{hyperref}
 \title{System Communication: Real-Time Data Transport Prototype}
 \author{L. Callahan, N. DePergola, A. Kaufmann,\\D. Lalli, T. Matson, T. Nguyen}
@@ -202,9 +204,9 @@ Both the database consumer and the UI consumer utilize the same SSE broker and s
 
 
 \subsection*{ExpeDat Data Streaming}
-ExpeDat is a high-performance technology designed to deliver data efficiently across networks, including wide-area connections with significant latency. Expedat supports both file transfer and streaming capabilities with only the difference being the flag used in the CLI command. It provides an alternative to conventional file transfer or streaming mechanisms for applications that require high-throughput movement of large datasets.
+ExpeDat is a high-performance technology designed to deliver data efficiently across networks, including wide-area connections with significant latency. ExpeDat supports both file transfer and streaming capabilities with the only difference being the flag used in the CLI command. It provides an alternative to conventional file transfer or streaming mechanisms for applications that require high-throughput movement of large datasets.
 
-The prototype chose to use ExpeDat's data streaming feature to simulate streaming raw observation data from the VLBA station containers to the DSOC environment. Each VLBA simulator initiates a data streaming process after receiving the appropriate workflow notifications and confirmation that the DSOC environment has sufficient storage capacity.
+The prototype used ExpeDat's data streaming feature to simulate streaming raw observation data from the VLBA station containers to the DSOC environment. Each VLBA simulator initiates a data streaming process after receiving the appropriate workflow notifications and confirmation that the DSOC environment has sufficient storage capacity.
 
 The streaming process uses ExpeDat client and server components to send simulated observation data to a destination directory accessible to the DSOC simulator. This streaming progress is monitored and published to Kafka through the progress tracking topic, allowing the Django website to display progress updates for the remote observer regarding the individual VLBA stations' streaming progress.
 
@@ -266,7 +268,80 @@ Grafana is an open-source visualization and observability platform used to build
 
 \section{Dependencies} \label{Dependencies}
 
+  In this section, we will discuss the dependencies that are required for the System Communication Prototype to function properly. These dependencies include software libraries, external services, and hardware requirements. The versions are a snapshot as of October 2026. Sources: \texttt{requirements.txt}, \texttt{Dockerfile}, \texttt{docker-compose.yml}, and the running containers. The only proprietary or licensed dependency is ExpeDat. Some versions are not fixed in those files, so a rebuild may install different versions than the ones listed here.
+
+\subsection*{Language and Runtime}
+
+  The language we chose here is Python, since we have to deal with data transfer and management. We run everything in Docker to simplify compatibility. The version is Python 3.11 (the \texttt{python:3.11-slim} base image, running 3.11.15).
+
+\subsection*{Web Framework and ASGI}
+
+  ASGI is the modern standard for Python web applications that supports asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. We need ASGI for async views and server-sent events. We use uvicorn to run the ASGI application, installed with uvloop, httptools and websockets. Django is constrained to \texttt{>=5.2,<5.3}, and gunicorn is installed but not used, since the container starts with uvicorn.
+
+\subsection*{Kafka}
+
+  There are 3 brokers in KRaft mode, so that if one is down, the others can stay up. We also used the JMX exporter as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics, and confluent-kafka is the Python client, built on librdkafka.
+
+\subsection*{Database and File Storage}
+
+  For the database we use PostgreSQL, with psycopg, psycopg-binary and postgres-exporter. For image storage we use SeaweedFS, with boto3 and botocore to communicate with the S3 gateway. To generate simulated DDM images, we use numpy, pandas, matplotlib and pillow, with some supporting libraries: argon2-cffi, argon2-cffi-bindings, cffi and pycparser.
+
+\subsection*{Data Movement}
+
+  We experimented with two data transfer tools. etransfer (v2.0, from JIVE) is free and open source, so we compiled it from source at build time. It needs a C++11 compiler, bundles its own UDT and SRT libraries, and listens on port 4004 for commands (TCP) and port 8008 for data (SRT). ExpeDat (\texttt{servedat} 1.23.1, MTP 4.5.3) is proprietary: the vendor ships ready-made binaries, so we copy them into the image at build time, with separate arm64 and x86-64 builds. We ran the 21-day free trial, so production use would need a licence.
+
+\subsection*{Testing and Load Testing}
+
+  For the testing environment we use pytest, pytest-django, pytest-cov and pytest-asyncio, and k6 for load testing in its own container.
+
+\subsection*{Infrastructure and Monitoring}
+
+  We use Traefik to handle HTTPS and UDP routes. We use Docker Desktop and Compose on the development machines. For Portainer, Prometheus and Grafana we used latest-tag images.
+
+\subsection*{Hardware and Hosting}
+
+  We used four droplets with 1 vCPU, 2 GB RAM and 50 GB disk for GBT and VLBA, and one droplet with 4 vCPU, 8 GB RAM and 160 GB disk for DSOC, where we have our database, image storage, ExpeDat server and other containers. One thing worth mentioning is that development was on arm64 (Apple Silicon) while the droplets are x86-64, so the binaries must match. 
+
+\subsection*{Summary of Dependencies}
+
+  Table~\ref{tab:dependencies} summarizes the dependencies discussed in this section, grouped by category. Versions marked ``(latest)'' were installed as the latest available at build time, so a rebuild may differ; all other versions are pinned.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} >{\raggedright\arraybackslash}p{0.68\textwidth}}
+\hline
+\textbf{Category} & \textbf{Components and versions} \\
+\hline
+\endfirsthead
+\multicolumn{2}{l}{\textit{Table~\ref{tab:dependencies} continued from previous page}} \\
+\hline
+\textbf{Category} & \textbf{Components and versions} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\caption{Dependencies of the System Communication} \label{tab:dependencies} \\
+\endlastfoot
+Language and runtime & Python 3.11 (\texttt{python:3.11-slim}, running 3.11.15) \\
+\hline
+Web framework and ASGI & Django 5.2.17 (constraint \texttt{>=5.2,<5.3}), asgiref 3.11.1, uvicorn 0.54.0 (latest) gunicorn 26.2.0 (installed but not used) \\
+\hline
+Django add-ons & whitenoise 6.12.0, django-prometheus 2.5.0, django-unfold 0.91.0, django-login-required-middleware 0.9.0, dj-database-url 3.1.2, python-dotenv 1.2.2 \\
+\hline
+Kafka & apache/kafka 4.1.2 (brokers), confluent-kafka 2.15.1 (latest) with librdkafka 2.15.1, cp-kafka 7.5.1, kafka-ui v0.7.2 (latest), JMX Prometheus exporter 1.6.0, kafka-exporter v1.9.0 \\
+\hline
+Data movement & ExpeDat \texttt{servedat} 1.23.1 (Nov 2025) with MTP 4.5.3 (proprietary, 21-day free trial); etransfer v2.0 (JIVE, open source, built from source) bundling libudt5ab, libsrt5ab, argparse11 and fkyaml \\
+\hline
+Database and file storage & PostgreSQL 18 (18.6), psycopg and psycopg-binary 3.3.4, postgres-exporter v0.20.1 (latest), SeaweedFS 4.40, boto3 and botocore 1.34.162, numpy 2.4.6 (latest), pandas 3.0.6 (latest), matplotlib 3.11.2, pillow 12.2.0, argon2-cffi 25.1.0, argon2-cffi-bindings 25.1.0, cffi 2.0.0, pycparser 3.0 \\
+\hline
+Testing and load testing & pytest 9.1.1, pytest-django 4.14.0, pytest-cov 7.1.0, pytest-asyncio 1.4.0, k6 0.54.0 \\
+\hline
+Infrastructure and monitoring & Traefik v3.7, Docker Desktop 29.7.2, Docker Compose v5.4.0, Portainer 2.45.0 (latest), Prometheus 3.14.0 (latest), Grafana 13.2.1 (latest) \\
+\end{longtable}
+
 %=====================================================================================
+
+
+
 
 
 \section{Ideas for Future Improvements} \label{Future}
