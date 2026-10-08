@@ -276,11 +276,11 @@ Grafana is an open-source visualization and observability platform used to build
 
 \subsection*{Web Framework and ASGI}
 
-  ASGI is the modern standard for Python web applications that supports asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. We need ASGI for async views and server-sent events. We use uvicorn to run the ASGI application, installed with uvloop, httptools and websockets. Django is constrained to \texttt{>=5.2,<5.3}, and gunicorn is installed but not used, since the container starts with uvicorn.
+  ASGI is the modern standard for Python web applications that supports asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. We need ASGI for async views and server-sent events. We use uvicorn to run the ASGI application. Django is constrained to \texttt{>=5.2,<5.3}.
 
 \subsection*{Kafka}
 
-  There are 3 brokers in KRaft mode, so that if one is down, the others can stay up. We also used the JMX exporter as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics, and confluent-kafka is the Python client, built on librdkafka.
+  There are 3 brokers in KRaft mode, so that if one is down, the others can stay up. JMX exporter is used as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics, and confluent-kafka is the Python client, built on librdkafka.
 
 \subsection*{Database and File Storage}
 
