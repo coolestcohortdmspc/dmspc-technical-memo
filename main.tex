@@ -21,10 +21,9 @@
 
 \section*{Abstract}
 
-\textbf{Ultimate goal of why we built this prototype: to explore feasible design options for ngRadar inter-site data communication, so that the project can make informed architectural decisions about public-network data movement, remote observing, and real-time feedback between GBO, VLBA sites, DSOC, and observers or operators. Also to create a system that could be used in other areas of the observatory, outside just the context of ngRadar}
+This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use for the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implement into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{[get requirements from conops/other resources, list some here]}. The final software architecture is the result of experimenting with the best options for observation data transport efficiency, web application efficiency, message reliability, retention, and storage, reproducability across sites, and more. 
 
-This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implement into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible for when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{get requirements from conops/other resources, list some here}. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
-
+\textbf{[Possibly move pieces of this paragraph to Intro?]}entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
 Interferometers used in Radio Astronomy require real time communication between instruments, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
 
 %=====================================================================================
@@ -42,8 +41,27 @@ This memo details the software system architecture (Section \ref{System Architec
 
 \section{System Architecture} \label{System Architecture}
 
-  Figure \ref{fig:C4} depicts the ngRadar System Communication Prototype architecture. \textbf{Nicole will be editing this entire section after she finishes the architecture diagrams. Below is what was previously written.}
-  
+  Figure \ref{fig:context} depicts the ngRadar System Communication Prototype architecture at a high level. For simplicity, the tools related to monitoring and performance testing the prototype will be considered as a separate software system, as the system communication prototype does not rely on those services to function. These tools are outlined in detail in Section \ref{Software Stack}.
+
+\begin{figure}[h!] 
+\centering 
+\includegraphics[width=0.85\columnwidth]{figures/systemcontext.png} 
+    \caption{System context diagram} 
+    \label{fig:context}
+\end{figure}
+
+Figure \ref{fig:container} shows the container-level view of the System Communication Prototype. 
+
+\begin{figure}[h!] 
+\centering 
+\includegraphics[width=0.85\columnwidth]{figures/containerdiagram.png} 
+    \caption{Container diagram} 
+    \label{fig:container}
+\end{figure}
+
+
+\textbf{Nicole will be editing this entire section after she finishes the architecture diagrams. Below is what was previously written.}
+
   To enable system communication across NRAO sites, the software may need to be compatible with various types of machines and operating systems. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
   The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. 
@@ -55,15 +73,7 @@ This memo details the software system architecture (Section \ref{System Architec
 \textbf{Move this paragrah to design decisions??}
   Security was an important consideration during the development process - if a web application with similar design architecture is implemented for actual use in ngRadar, it will run directly on NRAO computers across numerous observatory locations, and potentially interface with telescope hardware. Docker Containers play a role in keeping local computers safe, since applications within them are isolated from the rest of the computer. Django also has several built in security features, including user authentication, cross site scripting, and forgery attack protection.
 
-\textbf{Move this paragraph to design decisions??}
-  During the development process, the team needed a way to ensure that this website could be run across multiple machines for local development and debugging, but also perform reliably when run on a cloud-based or locally hosted server. To accomplish this, we used Docker Containers to isolate software components and their dependencies used on our website. This would ensure that any computer which has the Docker Engine - a server responsible for managing the containers - can run this web application and it will perform consistently.
 
-  \begin{figure}[h!] 
-\centering 
-\includegraphics[width=1\columnwidth]{figures/ngRadar_SysCom_C4.png} 
-    \caption{System architecture} 
-    \label{fig:C4}
-\end{figure}
   
   Fig. \ref{fig:step1} shows the first step of the system sequencing. The user submitting a new waveform indicates the beginning of the process, which triggers the initial Kafka message. An arrow from A to B represents a Kafka message produced by A and consumed by B. 
 
@@ -102,58 +112,56 @@ This memo details the software system architecture (Section \ref{System Architec
 Three backend frameworks were investigated for this prototype - Flask, FastAPI, and Django.
   Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask also does not have built in authentication or adminstrative features.
 
-  FastAPI provides high-speed, and asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework we investigated and includes features such as built in authentication, python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built in functionality, and developers can add libraries with additional features they need.
+  FastAPI provides high-speed, asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework out of the three that were investigated and includes features such as built-in authentication, Python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built-in functionality, and developers can add libraries with additional features they need.
 
-  Django is a framework with a large amount of built in functionality including an adminstrative dashboard, user authentication, HTML form processing, and an object-relational mapper for database interaction [\textbf{Revisit and add any additional built-in features we used}]. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
+  Django is a framework with a large amount of built-in functionality including an adminstrative dashboard, user authentication, HTML form processing, an object-relational mapper for database interaction, and a model-template-view architecture to seperate program logic from what the user can see. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
 
-  After considering all three frameworks, Django was chosen due to the large number of compatible software libraries, built in security and adminstrative features, and its ability to scale as website traffic grows.
+  After considering all three frameworks, Django was chosen due to the large number of compatible software libraries, built-in security and adminstrative features, and its ability to scale as website traffic grows.
 
 
 \subsection*{Message Brokers}
 
-  Real time data transmission across geographically separated locations was a defining requirement of our software prototype, and choosing a software tool to accomplish this was a major decision the team needed to make early in the design process. Initially, the team was considering using Socket programming for communication over the internet, but the added complexity of developing our own code to do this reliably with multiple computers led us to investigate using an existing message broker to accomplish this.
+  Real-time data transmission across geographically separated locations was a defining requirement of this software prototype, and choosing a software tool to accomplish this was a major decision made early in the design process. Initially, socket programming was considered for communication over the internet, but the added complexity of developing original low-level code to do this reliably with multiple computers led to this idea being ruled out. The investigation then shifted course to researching existing message brokers to accomplish real-time data transmission.
 
-There were three message brokers the team investigated using - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics. Messages are stored in these topics in subgroups called partitions, either until consumption is confirmed or for a fixed number of days. "Consumers" are used to receive messages from these topics. The initial time to implement a basic Kafka messaging setup was minimal; however, scaling up the system and debugging errors adds significant complexity. Kafka can also use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built in methods to prevent data loss if servers crash. 
+Three message brokers were investigated - Apache Kafka, RabbitMQ, and Apache Pulsar. Apache Kafka was first released to the public in 2011, and is the most widely used message broker across the industry. It is best suited for high volume data transmission, and uses a central server known as a cluster, with one or more message brokers to handle requests from producers and consumers. Kafka uses "producers" to send messages to user-defined topics. Messages are stored in these topics in subgroups called partitions, either until consumption is confirmed or for a fixed amount of time. "Consumers" are used to receive messages from these topics. The initial time to implement a basic Kafka messaging setup is minimal; however, scaling up the system and debugging errors adds significant complexity. Kafka can also use more computing resources than necessary if only sending a small amount of data. However, Kafka is very reliable, and has several built-in methods to prevent data loss if servers crash. 
 
-RabbitMQ was also considered as a broker option; it has the lowest message latency and lowest server memory requirement compared to the other two options, and is a significantly simpler system. This option was not chosen due to RabbitMQ's push model (producer controls the flow of messages and can overwhelm consumers) and the difficulty in scaling up the system. Apache Pulsar, the third option considered, is the newest of the three message brokers and attempts to combine the features of Kafka and RabbitMQ. Pulsar is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to setup than Kafka, has a higher message latency due to the extra storage layers, and has less documentation avaliable.
+RabbitMQ was also considered as a broker option; it has the lowest message latency and lowest server memory requirement compared to the other two options, and is a significantly simpler system. This option was not chosen due to RabbitMQ's push model (producer controls the flow of messages and can overwhelm consumers) and the difficulty in scaling up the system. Apache Pulsar, the third option considered, is the newest of the three message brokers and attempts to combine the features of Kafka and RabbitMQ. Pulsar is well suited for scaling up to handle high volumes of data. However, with the extra features Pulsar offers, it is more complex to set up than Kafka, has a higher message latency due to the extra storage layers, and has less documentation avaliable.
 
-  Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
+  Ultimately Kafka was selected as the message broker for this prototype, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and a large amount of documentation. One of the most important features of Kafka for this prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
-  Kafka has numerous options for online broker hosting, and initially the website was set up to work with Confluent Cloud. However, the team chose locally hosted Kafka brokers due to lower cost, increased flexibility, and more control over the data on those brokers.
+  Kafka has numerous options for online broker hosting, and initially the website was set up to work with Confluent Cloud. However, locally hosted Kafka brokers were later chosen due to lower cost, increased flexibility, and more control over the data on those brokers.
 
 \subsection*{Docker}
 
-In this software prototype, Docker containers were used to store and run all of the major software components, which is known as a microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could
-be changed without altering another container, it helped separate the codebase into smaller pieces, and made it easier to replace individual services in our code with alternatives if the team decided changes were necessary. Microservices also improved fault tolerance for the
-website - during testing, there were several times we noticed that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
+In this prototype, Docker containers were used to ensure that the software could be run across multiple machines for local development and debugging, but also perform reliably when run on a cloud-based or locally hosted server. Each of the major software components has its own container, which is known as the microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could be changed without altering another container. It also helped separate the codebase into smaller pieces and made it easier to replace individual services in the code with alternatives if changes were necessary. Microservices also improved fault tolerance for the website - during testing, there were several times that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
 
-  Containers were also used to ensure that this website could be run across multiple machines for local development and debugging, but also perform reliably when run on a cloud-based or locally hosted server. To accomplish this, we used Docker Containers to isolate software components and their dependencies used on our website. This would ensure that any computer which has the Docker Engine - a server responsible for managing the containers - can run this web application and it will perform consistently.
+Containerization ensures that any computer which has the Docker Engine - a server responsible for managing the containers - can run this web application with consistent performance.
 
 \subsection*{Object Store}
 
-  This software prototype simulates generating DDM images from the VLBA Antenna stations, and storing these images directly in a database as binary files significantly reduces performance and increases database size when large numbers of images need to be produced. Using a dedicated Object Store means the database only needs to store text-based information, enabling faster database queries and the ability to serve images using SDKs such as Amazon Boto3. 
+  This software prototype simulates generating DDM images from the raw data generated by VLBA antenna stations. Storing these images directly in a database as binary files significantly reduces performance and increases database size when large numbers of images need to be produced. Using a dedicated object store means the database only needs to store text-based information, enabling faster database queries and the ability to serve images using SDKs such as AWS Boto3. 
 
-    There were three object stores the team investigated: MinIO, Garage, and SeaweedFS. MinIO was first released in 2015 as an open source object store, with features including an administration panel, data encryption and authentication, support for object version control, forward error correction, and is optimized for parallel request handling. However, in late 2025, MinIO shifted to focus on commerical customers, and no longer maintains the open source code. It can still be downloaded from GitHub, although some of its features have been removed, and users must build it from source now. Garage is the second object store we investigated, and it is designed to be simple and use minimal computer resources. It offers a modest feature set, including data compression and backup, Amazon Boto3 integration, and an online admin interface. However, to install and set up the software, it must be built directly from the source code, which would add time and complexity to the project. The last object store the team researched was SeaweedFS, a distributed storage system designed to handle large numbers of files and scale with linear efficiency. Some additional features include data protection, file recovery, efficient metadata management, flexible deployment, and compatibility with multiple storage volumes, including Boto3. The SeaweedFS code comes packaged as a binary file with a built-in installer and a setup guide for Docker, making installation easy. After installation, there are three major software components of SeaweedFS: the Master server, Volume servers, and the Filer Server, which provides file system semantics. 
+    Three object stores were investigated: MinIO, Garage, and SeaweedFS. MinIO was first released in 2015 as an open-source object store, with features including an administration panel, data encryption and authentication, support for object version control, forward error correction, and optimization for parallel request handling. However, in late 2025, MinIO shifted to focus on commerical customers, and no longer maintains the open-source code. It can still be downloaded from GitHub, although some of its features have been removed, and users must build it from source now. Garage was investigated second as an object store option, and it is designed to be simple and use minimal computer resources. It offers a modest feature set, including data compression and backup, AWS Boto3 integration, and an online admin interface. However, to install and set up the software, it must be built directly from the source code, which would add time and complexity to the project. The last object store researched was SeaweedFS, a distributed storage system designed to handle large numbers of files and scale with linear efficiency. Some additional features include data protection, file recovery, efficient metadata management, flexible deployment, and compatibility with multiple storage volumes, including Boto3. The SeaweedFS code comes packaged as a binary file with a built-in installer and a setup guide for Docker, making installation easy. After installation, there are three major software components of SeaweedFS: the Master server, Volume servers, and the Filer server, which provides file system semantics. 
 
-    The team chose to implement SeaweedFS as the object store for our website because it is fully open source and actively maintained, it is easy to set up across multiple operating systems, performs well when used with large numbers of files, includes data protection features, and guides on how to set up a Docker container for it.
+    SeaweedFS was chosen as the object store for this prototype because it is fully open source and actively maintained, it is easy to set up across multiple operating systems, performs well when used with large numbers of files, includes data protection features, and provides guides on how to set it up for Docker.
 
   
 
 \subsection*{Data Movement}
 
-  Etransfer is the first data transfer tool tested within this prototype, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing us to adjust the code as needed \cite{marjolein_verkouter_jive-vlbietransfer_2026}. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfer, as well as server to server transfers, during which the data does not flow through the client's machine and/or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, mutliple transfers to one daemon in parallel, and Access Control Lists to define allowed/denied directories. It does not yet support authentication and authorization.
+  The first data transfer tool tested within this prototype was etransfer, which was developed by the Joint Institute for VLBI ERIC (JIVE) and has become the standard data transfer tool within the VLBI community. The code repository for this tool is free to use and open source, which benefits development by allowing for code adjustments as needed \cite{marjolein_verkouter_jive-vlbietransfer_2026}. Etransfer supports TCP, UDT, and SRT, with UDT and SRT being the recommended protocols. The etransfer client (etc) and etransfer daemon (etd) system allows the client program to initiate both client to server transfers and server to server transfers, with the latter option ensuring data does not flow through the client's machine or network (note that server and daemon are interchangeable). This tool supports resuming failed transfers, multiple transfers to one daemon in parallel, and access control lists to define allowed and denied directories. It does not yet support authentication and authorization.
 
 
-  ExpeDat is the second data transfer tool the team evaluated for use in this website, and it was developed by Data Expedition Incorporated. Unlike most of the other code in this prototype, it is proprietary and uses the Multipurpose Transcation Protocol (MTP), a data transport protocol which can adapt to changes in network conditions, and is based on the open source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers. It is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
+  ExpeDat was the second data transfer tool evaluated for use in this website, and it was developed by Data Expedition, Inc. Unlike most of the other code in this prototype, it is proprietary and uses the Multipurpose Transaction Protocol (MTP), a data transport protocol which can adapt to changes in network conditions, and is based on the open-source User Datagram Protocol (UDP). The software consists of a server and several client applications to move files between networked computers. It is capable of resuming incomplete file transfers, compressing data before transferring it, tracking file upload status, and remotely monitoring the server status. These settings can be changed in the \textit{servedat.cf} and \textit{svpasswd} files. The client and server can be set up and installed on Windows, Linux, and MacOS, or configured to run inside a docker container.
 
 
 \subsection*{Cloud-Hosting Solutions}
 
-  While developing this website, the team needed a way to test our simulated data from geographically distributed locations. If this software architecture was implemented to work with telescope hardware, it would be hosted using servers on site at NRAO locations across the county. The website could then be used to communicate between observatory sites, and inform remote viewers of real-time events during an active observation.
+  While developing this website, there was a need to test the system communication between geographically distributed locations. If this software architecture was implemented to work with telescope hardware, it would be hosted using servers on site at NRAO locations across the country. The website could then be used to communicate between observatory sites, and inform remote viewers of real-time events during an active observation.
 
-  There were two platforms the chose to host the website on during this process, the first was Render and the second was Digital Ocean. Render offers a free option for hosting small websites with very limited performance - 1GB of storage, 256 MB of RAM, and 1/10th of a virtual CPU. This offered a way for the team to demonstrate the website to other observatory personel over the public internet, but performance was very slow. Render offers paid subscriptions starting at \$7, but the least expensive plan which includes 1 virtual CPU is \$25 per month, and includes only 2GB of RAM. The limited performance and expensive cost of using Render led the team to stop using it and explore alternatives.
+  There were two platforms chosen to host the website during this process, the first was Render and the second was DigitalOcean. Render offers a free option for hosting small websites with very limited performance - 1GB of storage, 256 MB of RAM, and 1/10th of a virtual CPU. This offered a way for the website to be tested over the public internet, but performance was very slow. Render offers paid subscriptions starting at \$7, but the least expensive plan which includes 1 virtual CPU is \$25 per month, and includes only 2GB of RAM. The limited performance and expensive cost of using Render led to exploring alternatives for this prototype.
   
-  DigitalOcean is a cloud hosting platform, which sells access to Virtual Machines, known as "Droplets" at various locations worldwide. After testing the performance of a single Droplet, the team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet. Each entry level Droplet offered 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of our website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, the team found that DSOC needed to use this mid-tier droplet. The other portions of our website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets. Since migrating the website to work on Digital Ocean, performance has significantly improved, even when many people  are using it at once. Currently, this prototype website costs \$96 per month to operate on a cloud hosted service, but that cost will only exist during the development phase.
+  DigitalOcean is a cloud-hosting platform, which sells access to Linux-based virtual machines called Droplets. These are available for purchase at various locations hosted worldwide. After testing the performance of a single Droplet, further setup was completed to have Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney, running the website and its containers in a distributed, global environment. DigitalOcean offers Droplets with varying performance levels, and monthly subscriptions to four entry level droplets and one mid-tier droplet were purchased for prototyping. Each entry level Droplet offers 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of the website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, data transport server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, DSOC was determined to need this mid-tier droplet. The other portions of the website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets. Since migrating the website to work on DigitalOcean, performance has significantly improved, even when many people are navigating it at once. Currently, this prototype website costs \$96 per month to operate on a cloud-hosted service, but that cost will only exist during the development phase.
 
 
 %=====================================================================================
@@ -257,7 +265,7 @@ Traefik provides HTTPS termination and supports automated TLS certificate manage
 Traefik also exposes Prometheus-compatible metrics, allowing request traffic and reverse-proxy performance to be monitored through the prototype's observability infrastructure.
 
 
-\subsection*{Performace \& Monitoring Tools}
+\subsection*{Performance \& Monitoring Tools}
 The prototype incorporates several monitoring and performance testing technologies to observe container health, collect application and infrastructure metrics, measure website performance, and trace processing operations across the distributed system.
 
 Portainer allows users to inspect running containers, view logs, monitor resource utilization, and manage container lifecycle operations. The prototype uses a centralized Portainer instance hosted on the New York Droplet, with Portainer Agents deployed on the geographically distributed Droplets. The Agents provide remote access to their respective Docker environments through the central Portainer interface. This configuration allows the team to inspect container statuses, restart services, review logs, and monitor Docker resources across the distributed deployment without connecting individually to each Droplet.
@@ -284,6 +292,7 @@ Grafana is an open-source visualization and observability platform used to build
 \subsection*{Web Framework and ASGI}
 
   ASGI is the modern standard for Python web applications that support asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. ASGI supports async views and server-sent events (SSE). SSE pushes updates to the browser as they happen, replacing the database polling used early in development, which became a performance bottleneck. Uvicorn is used to run the ASGI application. Django is constrained to \texttt{>=5.2,<5.3}.
+Django is constrained to run versions greater than or equal to 5.2 through 5.3.
 
 \subsection*{Kafka}
 
@@ -330,7 +339,7 @@ Grafana is an open-source visualization and observability platform used to build
 \endlastfoot
 Language and runtime & Python 3.11 (\texttt{python:3.11-slim}, running 3.11.15) \\
 \hline
-Web framework and ASGI & Django 5.2.17 (constraint \texttt{>=5.2,<5.3}), asgiref 3.11.1, uvicorn 0.54.0 (latest) gunicorn 26.2.0 (installed but not used) \\
+Web framework and ASGI & Django 5.2.17 (constraint \texttt{5.2 or 5.3}), asgiref 3.11.1, uvicorn 0.54.0 (latest) gunicorn 26.2.0 (installed but not used) \\
 \hline
 Django add-ons & whitenoise 6.12.0, django-prometheus 2.5.0, django-unfold 0.91.0, django-login-required-middleware 0.9.0, dj-database-url 3.1.2, python-dotenv 1.2.2 \\
 \hline
@@ -352,26 +361,41 @@ Infrastructure and monitoring & Traefik v3.7, Docker Desktop 29.7.2, Docker Comp
 
 
 \section{Ideas for Future Improvements} \label{Future}
-%===== Some of these may be resolved in [760] Final Technical Cleanup? Not sure
 
-\begin{itemize}
-  \item Features
-  \begin{itemize}
-    
-    \item Originally, DSOC checks its storage and responds to a single VLBA station if it can accept the incoming e-transfer/expedat raw data transfer/stream. Currently, we have this check occurring simultaneously for all 10 VLBA stations. But we noticed that with 10 consecutive storage check requests, DSOC responds yes without taking into account the requests it’s already approved. With the simultaneous transfers/streams, DSOC storage could potentially go over its storage limit for incoming raw data. It would be beneficial to have some logic built in place for DSOC to keep track of its storage before and after each approval of a requested VLBA site's incoming transfer/stream.
-    
-    \item Currently, on our history events page, you can see that in our sequencing of events, DSOC sends a 'Completed' kafka message 10 times per 10 VLBA sims. It might make more sense to have DSOC wait until it has finished processing all 10 VLBAs raw data, generates its 10 DDM images and stores them to seaweedfs, and then send only one 'Completed' kafka message to be displayed on the UI and communicate to the remote observer that the sequencing of events has finished. 
-  
-  \end{itemize}
-  
-  \item Known issues
-  \begin{itemize}
-    
-    \item The submit new waveform button currently unlocks after the first of several concurrent VLBA transfers completes, rather than after all of them have completed.
-    \item Part way through the prototype's development we had a big refactor to decouple our UI from the postgres database and convert the UI to be completely event-driven by relying on kafka for updates to the UI rather than polling the database to update the UI. Before this refactor, we had built certain safeguards to ensure that the website, backend processes, and our docker ecosystem could fail gracefully and print helpful logs for debugging and restarting, rather than failing and exiting. We have not tested any of the graceful failure scenarious since the UI Bridge refactor, so it would be valuable to go back through those scenarious and ensure that the prototype fails gracefully. 
 
-  \end{itemize}
-\end{itemize}
+  The prototype demonstrates the full event flow, and the items below are what remain for a production-ready ngRadar system. The section is organized as known issues, improvements, and features.
+
+\subsection*{Known Issues}
+
+  The submit new waveform button unlocks after the first of several concurrent VLBA transfers completes, rather than after all of them have completed. A new waveform can therefore be submitted while earlier transfers are still running. The button should stay locked until every transfer in the sequence is complete.
+
+  Part way through the prototype's development, a large refactor decoupled the UI from the PostgreSQL database and made the UI completely event-driven, relying on Kafka for updates instead of polling the database. Before this refactor, certain safeguards ensured that the website, backend processes, and Docker ecosystem could fail gracefully and print helpful logs for debugging and restarting, rather than failing and exiting. None of these graceful failure scenarios have been tested since the UI bridge refactor. Going back through those scenarios would confirm that the prototype still fails gracefully.
+
+  The \texttt{vlba\_sim} container stops reading Kafka for up to 15 minutes while it waits for the daemon after an outage. A waveform submitted during this time sits unprocessed until the wait resolves. Reading Kafka messages while waiting would remove this delay.
+
+  The \texttt{-6} return code cannot separate a stopped daemon from network loss, so the error message cannot name the cause. The message describes what the code means (a connection or write failure), not a guaranteed root cause.
+
+\subsection*{Improvements}
+
+  Moving from cloud hosting to in-house infrastructure is worth evaluating. The main reason is full control over the sequence of events, with the ability to configure the servers, network, and services however the project requires. The cloud droplets also limit the available CPU, RAM, and storage. The trade-offs are cost, maintenance, reachability from VLBA sites, and security.
+
+  Kafka runs out of memory on the 2 GB droplets. Each node uses about 800 MB of RAM, and with no swap configured, the Linux out-of-memory killer stopped two of the three Kafka nodes. The fixes are more RAM or a swap file, and restart policies on the Kafka containers.
+
+  The capacity of the data transfer path is not yet characterized. Concurrent overlap of transfers was never measured, and no real-network bandwidth or latency numbers exist. During testing, a limit on the number of concurrent transfers was suspected, but there is no direct proof of one. If such a limit exists, it could come from the resources retained on the droplet rather than from ExpeDat itself. Measuring CPU, RAM, and disk usage with the existing Prometheus and Grafana dashboards while increasing the number of simultaneous transfers would show which.
+
+  The shared volume needs periodic cleaning, because repeated runs can exhaust the simulated 5 GB.
+
+\subsection*{Features}
+
+  Originally, DSOC checked its storage and responded to a single VLBA station about whether it could accept the incoming etransfer or ExpeDat raw data transfer or stream. Currently, this check occurs simultaneously for all 10 VLBA stations. With 10 consecutive storage check requests, DSOC responds yes without accounting for the requests it has already approved, so with simultaneous transfers or streams, DSOC storage could exceed its limit for incoming raw data. DSOC should keep a running storage count, updated before and after each approval of a VLBA site's incoming transfer or stream.
+
+  On the history events page, DSOC sends a ``Completed'' Kafka message 10 times for the 10 VLBA simulators. DSOC should instead wait until all 10 VLBA raw data transfers are processed and the 10 DDM images are generated and stored in SeaweedFS, and then send a single ``Completed'' message. This message is displayed on the UI and tells the remote observer that the sequence of events has finished.
+
+  Observer notifications would alert a remote observer when a sequence completes or fails, so the history page does not need to be watched continuously. Because every event already passes through Kafka, a new consumer could subscribe to the existing topics and send an email or chat message when it sees a completion or failure event.
+
+  User roles would separate what observers and operators are allowed to do. For example, observers could view the home and history pages, while only operators could submit a new waveform. This matters because a similar web application may eventually interface with telescope hardware. Django already provides user authentication, groups, and permissions, so roles could be added by assigning users to groups and checking the group on the waveform submission view.
+
+  Retry and resume status on the UI would show an observer when a failed transfer is being retried or resumed, instead of appearing stalled. The history page already shows a failure reason for failed transfers. A retry or resume event that includes the attempt number could be published to Kafka and displayed the same way.
 
 %=====================================================================================
 \bibliography{zotero-dmspc-technical-memo}
