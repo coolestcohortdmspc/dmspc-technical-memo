@@ -33,7 +33,7 @@ This software documents a real-time data transport architecture developed by the
 \textbf{Note from Nicole: I want it to be clear that yes, our prototype was devleoped in the context of ngRadar, so we will stick with that terminology, BUT the goal of this prototyping cohort was to investigate tools that could be used for several projects at NRAO.}
 The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
 
-  The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for our team to demonstrate the prototype's proof of concept.
+  The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for this team to demonstrate the prototype's proof of concept.
 
 This memo details the software system architecture (Section \ref{System Architecture}), design decisions (Section \ref{Design Decisions}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}). \textbf{Needs Laura's stamp of approval.}
 
@@ -41,7 +41,7 @@ This memo details the software system architecture (Section \ref{System Architec
 
 \section{System Architecture} \label{System Architecture}
 
-  Figure \ref{fig:C4} depicts the ngRadar System Communication Prototype architecture. 
+  Figure \ref{fig:C4} depicts the ngRadar System Communication Prototype architecture. \textbf{Nicole will be editing this entire section after she finishes the architecture diagrams. Below is what was previously written.}
   
   To enable system communication across NRAO sites, the software may need to be compatible with various types of machines and operating systems. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
@@ -119,8 +119,6 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
   Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
   Kafka has numerous options for online broker hosting, and initially the website was set up to work with Confluent Cloud. However, the team chose locally hosted Kafka brokers due to lower cost, increased flexibility, and more control over the data on those brokers.
-
-\subsection*{SQL Database}
 
 \subsection*{Object Store}
 
@@ -228,7 +226,7 @@ DigitalOcean Droplets are Linux-based virtual machines hosted on DigitalOcean's 
   \begin{itemize}
     
     \item San Francisco: GBT simulator, VLBA-BR, VLBA-MK, a Kafka broker, and a Portainer Agent.
-    \item New York: DSOC simulator, VLBA-KP, VLBA-OV, the Django website and UI consumer, datbase consumer, PostgreSQL, SeaweedFS, Kafka infrastructure, ExpeDat server, Traefik, Portainer, and monitoring services.
+    \item New York: DSOC simulator, VLBA-KP, VLBA-OV, the Django website and UI consumer, database consumer, PostgreSQL, SeaweedFS, Kafka infrastructure, ExpeDat server, Traefik, Portainer, and monitoring services.
     \item London: VLBA-SC, VLBA-HN, a Kafka broker, and a Portainer Agent.
     \item Bangalore: VLBA-NL, VLBA-FD, and a Portainer Agent.
     \item Sydney: VLBA-LA, VLBA-PT, and a Portainer Agent.
@@ -236,7 +234,7 @@ DigitalOcean Droplets are Linux-based virtual machines hosted on DigitalOcean's 
   \end{itemize}
 \end{itemize}
 
-The New York Droplet hosted the majority of the prototype's centralized services, including the public-facing website and UI consumer, database, database consumer, object storage, and observability infrastructure. The remaining Droplets primarily hosted the distributed GBT and VLBA simulation containers. Each droplet has a portainer agent which forwards container health metrics and control to main Portainer container hosted on the DSOC droplet. Portainer is a container management platform that provides a web-based interface for administering Docker environments. 
+The New York Droplet hosted the majority of the prototype's centralized services, including the public-facing website and UI consumer, database, database consumer, object storage, and observability infrastructure. The remaining Droplets primarily hosted the distributed GBT and VLBA simulation containers. Each Droplet has a Portainer agent which forwards container health metrics and control to a main Portainer container hosted on the DSOC droplet. Portainer is a container management platform that provides a web-based interface for administering Docker environments. 
 
 Each Droplet maintained its own Docker environment, with communication between geographically separated services occurring over network-accessible endpoints. This configuration allowed the prototype to execute its simulation processes across multiple cloud regions while using centralized application and storage services. This deployment allowed the prototype's geographically separated simulation components to remain connected through the Kafka messaging infrastructure and ExpeDat data streaming services.
 
@@ -253,7 +251,7 @@ Traefik also exposes Prometheus-compatible metrics, allowing request traffic and
 \subsection*{Performace \& Monitoring Tools}
 The prototype incorporates several monitoring and performance testing technologies to observe container health, collect application and infrastructure metrics, measure website performance, and trace processing operations across the distributed system.
 
-Portainer allows users to inspect running containers, view logs, monitor resource utilization, and manage container lifecycle operations. The prototype uses a centralized Portainer instance hosted on the New York Droplet, with Portainer Agents deployed on the geographically distributed Droplets. The agents provide remote access to their respective Docker environments through the central Portainer interface. This configuration allows the team to inspect container status, restart services, review logs, and monitor Docker resources across the distributed deployment without connecting individually to each Droplet.
+Portainer allows users to inspect running containers, view logs, monitor resource utilization, and manage container lifecycle operations. The prototype uses a centralized Portainer instance hosted on the New York Droplet, with Portainer Agents deployed on the geographically distributed Droplets. The Agents provide remote access to their respective Docker environments through the central Portainer interface. This configuration allows the team to inspect container statuses, restart services, review logs, and monitor Docker resources across the distributed deployment without connecting individually to each Droplet.
 
 Prometheus is an open-source monitoring system that collects and stores numerical time-series metrics. It periodically retrieves metrics from configured HTTP endpoints, commonly referred to as scrape targets, and stores them for querying and visualization. The prototype uses Prometheus to collect application, container, and infrastructure performance metrics. Exporters expose measurements from supporting technologies, including Kafka and PostgreSQL, in a format that Prometheus can scrape. The monitoring environment includes exporters for collecting information such as Kafka consumer lag, broker and topic statistics, database activity, and system resource utilization. Additional metrics from instrumented application components and Traefik provide visibility into application and HTTP request behavior. Prometheus serves as a metrics data source for Grafana, where the collected measurements are displayed in monitoring dashboards.
 
@@ -268,43 +266,43 @@ Grafana is an open-source visualization and observability platform used to build
 
 \section{Dependencies} \label{Dependencies}
 
-  In this section, we will discuss the dependencies that are required for the System Communication Prototype to function properly. These dependencies include software libraries, external services, and hardware requirements. The versions are a snapshot as of October 2026. Sources: \texttt{requirements.txt}, \texttt{Dockerfile}, \texttt{docker-compose.yml}, and the running containers. The only proprietary or licensed dependency is ExpeDat. Some versions are not fixed in those files, so a rebuild may install different versions than the ones listed here.
+  This section describes the dependencies required for the System Communication Prototype to function properly. These dependencies include software libraries, external services, and hardware requirements. The versions are a snapshot as of October 2026. Sources are \texttt{requirements.txt}, \texttt{Dockerfile}, \texttt{docker-compose.yml}, and the running containers. The only proprietary or licensed dependency is ExpeDat. Some versions are not fixed in those files, so a rebuild may install different versions than the ones listed here.
 
 \subsection*{Language and Runtime}
 
-  The language we chose here is Python, since we have to deal with data transfer and management. We run everything in Docker to simplify compatibility. The version is Python 3.11 (the \texttt{python:3.11-slim} base image, running 3.11.15).
+  The chosen language is Python because the prototype involves a large amount of data transfer and management. Python is also widely used across astronomy, all team members have prior experience coding in it, and the website does not require the extra computing speed offered by compiled languages such as C++. All components are containerized in Docker to simplify compatibility. The version is Python 3.11 (the \texttt{python:3.11-slim} base image, running 3.11.15).
 
 \subsection*{Web Framework and ASGI}
 
-  ASGI is the modern standard for Python web applications that supports asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. We need ASGI for async views and server-sent events. We use uvicorn to run the ASGI application. Django is constrained to \texttt{>=5.2,<5.3}.
+  ASGI is the modern standard for Python web applications that support asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. ASGI supports async views and server-sent events (SSE). SSE pushes updates to the browser as they happen, replacing the database polling used early in development, which became a performance bottleneck. Uvicorn is used to run the ASGI application. Django is constrained to \texttt{>=5.2,<5.3}.
 
 \subsection*{Kafka}
 
-  There are 3 brokers in KRaft mode, so that if one is down, the others can stay up. JMX exporter is used as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics, and confluent-kafka is the Python client, built on librdkafka.
+  There are three brokers in KRaft mode, so that if one is down, the others can stay up. The JMX exporter is used as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics. The Python client is confluent-kafka, built on librdkafka.
 
 \subsection*{Database and File Storage}
 
-  For the database we use PostgreSQL, with psycopg, psycopg-binary and postgres-exporter. For image storage we use SeaweedFS, with boto3 and botocore to communicate with the S3 gateway. To generate simulated DDM images, we use numpy, pandas, matplotlib and pillow, with some supporting libraries: argon2-cffi, argon2-cffi-bindings, cffi and pycparser.
+  PostgreSQL is used for the database, with psycopg, psycopg-binary and postgres-exporter. SeaweedFS is used for image storage, with boto3 and botocore to communicate with the S3 gateway. To generate simulated DDM images, numpy, pandas, matplotlib and pillow are used, with some supporting libraries: argon2-cffi, argon2-cffi-bindings, cffi and pycparser.
 
 \subsection*{Data Movement}
 
-  We experimented with two data transfer tools. etransfer (v2.0, from JIVE) is free and open source, so we compiled it from source at build time. It needs a C++11 compiler, bundles its own UDT and SRT libraries, and listens on port 4004 for commands (TCP) and port 8008 for data (SRT). ExpeDat (\texttt{servedat} 1.23.1, MTP 4.5.3) is proprietary: the vendor ships ready-made binaries, so we copy them into the image at build time, with separate arm64 and x86-64 builds. We ran the 21-day free trial, so production use would need a licence.
+  The prototype experiments with two data transfer tools: etransfer and ExpeDat. Etransfer (v2.0, from JIVE) is free and open source, so it is compiled from source at build time. It needs a C++11 compiler, bundles its own UDT and SRT libraries, and listens on port 4004 for commands (TCP) and port 8008 for data (SRT). ExpeDat (\texttt{servedat} 1.23.1, MTP 4.5.3) is proprietary: the vendor ships ready-made binaries, which are copied into the image at build time, with separate arm64 and x86-64 builds. The free trial is valid for 21 days, so production use would need a license.
 
 \subsection*{Testing and Load Testing}
 
-  For the testing environment we use pytest, pytest-django, pytest-cov and pytest-asyncio, and k6 for load testing in its own container.
+  Pytest, pytest-django, pytest-cov and pytest-asyncio are used for the testing environment, and k6 is used for load testing in its own container.
 
 \subsection*{Infrastructure and Monitoring}
 
-  We use Traefik to handle HTTPS and UDP routes. We use Docker Desktop and Compose on the development machines. For Portainer, Prometheus and Grafana we used latest-tag images.
+  Traefik is used to handle HTTPS and UDP routes. Docker Desktop and Compose are used on the development machines. Portainer, Prometheus and Grafana use latest-tag images.
 
 \subsection*{Hardware and Hosting}
 
-  We used four droplets with 1 vCPU, 2 GB RAM and 50 GB disk for GBT and VLBA, and one droplet with 4 vCPU, 8 GB RAM and 160 GB disk for DSOC, where we have our database, image storage, ExpeDat server and other containers. One thing worth mentioning is that development was on arm64 (Apple Silicon) while the droplets are x86-64, so the binaries must match. 
+  The project is deployed on DigitalOcean. There are four droplets with 1 vCPU, 2 GB RAM and 50 GB disk for GBT and VLBA, and one droplet with 4 vCPU, 8 GB RAM and 160 GB disk for DSOC, where the database, image storage, ExpeDat server and other containers are hosted. Note that development is on arm64 (Apple Silicon) while the droplets are x86-64, so the binaries must match.
 
 \subsection*{Summary of Dependencies}
 
-  Table~\ref{tab:dependencies} summarizes the dependencies discussed in this section, grouped by category. Versions marked ``(latest)'' were installed as the latest available at build time, so a rebuild may differ; all other versions are pinned.
+  Table~\ref{tab:dependencies} summarizes the dependencies discussed in this section, grouped by category. Versions marked ``(latest)'' are installed as the latest available at build time, so a rebuild may differ; all other versions are pinned.
 
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.26\textwidth} >{\raggedright\arraybackslash}p{0.68\textwidth}}
 \hline
