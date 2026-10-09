@@ -21,7 +21,7 @@
 
 \section*{Abstract}
 
-This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use for the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implement into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{[get requirements from conops/other resources, list some here]}. The final software architecture is the result of experimenting with the best options for observation data transport efficiency, web application efficiency, message reliability, retention, and storage, reproducability across sites, and more. 
+This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use for the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implemented into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{[get requirements from conops/other resources, list some here]}. The final software architecture is the result of experimenting with the best options for observation data transport efficiency, web application efficiency, message reliability, retention, storage, reproducability across sites, and more. 
 
 \textbf{[Possibly move pieces of this paragraph to Intro?]}entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
 Interferometers used in Radio Astronomy require real time communication between instruments, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
@@ -161,7 +161,7 @@ Containerization ensures that any computer which has the Docker Engine - a serve
 
   There were two platforms chosen to host the website during this process, the first was Render and the second was DigitalOcean. Render offers a free option for hosting small websites with very limited performance - 1GB of storage, 256 MB of RAM, and 1/10th of a virtual CPU. This offered a way for the website to be tested over the public internet, but performance was very slow. Render offers paid subscriptions starting at \$7, but the least expensive plan which includes 1 virtual CPU is \$25 per month, and includes only 2GB of RAM. The limited performance and expensive cost of using Render led to exploring alternatives for this prototype.
   
-  DigitalOcean is a cloud-hosting platform, which sells access to Linux-based virtual machines called Droplets. These are available for purchase at various locations hosted worldwide. After testing the performance of a single Droplet, further setup was completed to have Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney, running the website and its containers in a distributed, global environment. DigitalOcean offers Droplets with varying performance levels, and monthly subscriptions to four entry level droplets and one mid-tier droplet were purchased for prototyping. Each entry level Droplet offers 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of the website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, data transport server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, DSOC was determined to need this mid-tier droplet. The other portions of the website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets. Since migrating the website to work on DigitalOcean, performance has significantly improved, even when many people are navigating it at once. Currently, this prototype website costs \$96 per month to operate on a cloud-hosted service, but that cost will only exist during the development phase.
+  DigitalOcean is a cloud-hosting platform, which sells access to Linux-based virtual machines called Droplets. These are available for purchase at various locations hosted worldwide. After testing the performance of a single Droplet, further setup was completed to have Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney, running the website and its containers in a distributed, global environment. DigitalOcean offers Droplets with varying performance levels, and monthly subscriptions to four entry level Droplets and one mid-tier Droplet were purchased for prototyping. Each entry level Droplet offers 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier Droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of the website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, data transport server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, DSOC was determined to need this mid-tier Droplet. The other portions of the website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets. Since migrating the website to work on DigitalOcean, performance has significantly improved, even when many people are navigating it at once. Currently, this prototype website costs \$96 per month to operate on a cloud-hosted service, but that cost will only exist during the development phase.
 
 
 %=====================================================================================
@@ -251,7 +251,7 @@ DigitalOcean Droplets are Linux-based virtual machines hosted on DigitalOcean's 
   \end{itemize}
 \end{itemize}
 
-The New York Droplet hosted the majority of the prototype's centralized services, including the public-facing website and UI consumer, database, database consumer, object storage, and observability infrastructure. The remaining Droplets primarily hosted the distributed GBT and VLBA simulation containers. Each Droplet has a Portainer agent which forwards container health metrics and control to a main Portainer container hosted on the DSOC droplet. Portainer is a container management platform that provides a web-based interface for administering Docker environments. 
+The New York Droplet hosted the majority of the prototype's centralized services, including the public-facing website and UI consumer, database, database consumer, object storage, and observability infrastructure. The remaining Droplets primarily hosted the distributed GBT and VLBA simulation containers. Each Droplet has a Portainer agent which forwards container health metrics and control to a main Portainer container hosted on the DSOC Droplet. Portainer is a container management platform that provides a web-based interface for administering Docker environments. 
 
 Each Droplet maintained its own Docker environment, with communication between geographically separated services occurring over network-accessible endpoints. This configuration allowed the prototype to execute its simulation processes across multiple cloud regions while using centralized application and storage services. This deployment allowed the prototype's geographically separated simulation components to remain connected through the Kafka messaging infrastructure and ExpeDat data streaming services.
 
@@ -287,20 +287,19 @@ Grafana is an open-source visualization and observability platform used to build
 
 \subsection*{Language and Runtime}
 
-  The chosen language is Python because the prototype involves a large amount of data transfer and management. Python is also widely used across astronomy, all team members have prior experience coding in it, and the website does not require the extra computing speed offered by compiled languages such as C++. All components are containerized in Docker to simplify compatibility. The version is Python 3.11 (the \texttt{python:3.11-slim} base image, running 3.11.15).
+  The chosen language is Python because the prototype involves a large amount of data transfer and management. Python is also widely used across astronomy, all team members have prior experience with it, and the website does not require the extra computing speed offered by compiled languages such as C++. All components are containerized in Docker to simplify compatibility. The version is Python 3.11 (the \texttt{python:3.11-slim} base image, running 3.11.15).
 
 \subsection*{Web Framework and ASGI}
 
-  ASGI is the modern standard for Python web applications that support asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. ASGI supports async views and server-sent events (SSE). SSE pushes updates to the browser as they happen, replacing the database polling used early in development, which became a performance bottleneck. Uvicorn is used to run the ASGI application. Django is constrained to \texttt{>=5.2,<5.3}.
-Django is constrained to run versions greater than or equal to 5.2 through 5.3.
+  ASGI is the modern standard for Python web applications that support asynchronous programming, while WSGI is the classic standard for synchronous, blocking web applications. ASGI supports async views and server-sent events (SSE). SSE pushes updates to the browser as they happen, replacing the database polling used early in development, which became a performance bottleneck. Uvicorn is used to run the ASGI application. Django is constrained to run versions greater than or equal to 5.2 through 5.3.
 
 \subsection*{Kafka}
 
   There are three brokers in KRaft mode, so that if one is down, the others can stay up. The JMX exporter is used as a Java agent to expose broker metrics to Prometheus, so that they can be shown on the Grafana dashboard. The one-shot \texttt{kafka-init} container, built on the cp-kafka image, creates the topics. The Python client is confluent-kafka, built on librdkafka.
 
-\subsection*{Database and File Storage}
+\subsection*{Database and Object Store}
 
-  PostgreSQL is used for the database, with psycopg, psycopg-binary and postgres-exporter. SeaweedFS is used for image storage, with boto3 and botocore to communicate with the S3 gateway. To generate simulated DDM images, numpy, pandas, matplotlib and pillow are used, with some supporting libraries: argon2-cffi, argon2-cffi-bindings, cffi and pycparser.
+  PostgreSQL is used for the database, with psycopg, psycopg-binary, and postgres-exporter. SeaweedFS is used for image storage, with Boto3 and Botocore to communicate with the S3 gateway. To generate simulated DDM images, numpy, pandas, matplotlib and pillow are used, with some supporting libraries: argon2-cffi, argon2-cffi-bindings, cffi and pycparser.
 
 \subsection*{Data Movement}
 
@@ -316,7 +315,7 @@ Django is constrained to run versions greater than or equal to 5.2 through 5.3.
 
 \subsection*{Hardware and Hosting}
 
-  The project is deployed on DigitalOcean. There are four droplets with 1 vCPU, 2 GB RAM and 50 GB disk for GBT and VLBA, and one droplet with 4 vCPU, 8 GB RAM and 160 GB disk for DSOC, where the database, image storage, ExpeDat server and other containers are hosted. Note that development is on arm64 (Apple Silicon) while the droplets are x86-64, so the binaries must match.
+  The project is deployed on DigitalOcean. There are four Droplets with 1 vCPU, 2 GB RAM and 50 GB disk for GBT and VLBA, and one Droplet with 4 vCPU, 8 GB RAM and 160 GB disk for DSOC, where the database, image storage, ExpeDat server and other containers are hosted. Note that development is on arm64 (Apple Silicon) while the Droplets are x86-64, so the binaries must match.
 
 \subsection*{Summary of Dependencies}
 
@@ -339,7 +338,7 @@ Django is constrained to run versions greater than or equal to 5.2 through 5.3.
 \endlastfoot
 Language and runtime & Python 3.11 (\texttt{python:3.11-slim}, running 3.11.15) \\
 \hline
-Web framework and ASGI & Django 5.2.17 (constraint \texttt{5.2 or 5.3}), asgiref 3.11.1, uvicorn 0.54.0 (latest) gunicorn 26.2.0 (installed but not used) \\
+Web framework and ASGI & Django 5.2.17 (constraint \texttt{5.2 through 5.3}), asgiref 3.11.1, uvicorn 0.54.0 (latest) gunicorn 26.2.0 (installed but not used) \\
 \hline
 Django add-ons & whitenoise 6.12.0, django-prometheus 2.5.0, django-unfold 0.91.0, django-login-required-middleware 0.9.0, dj-database-url 3.1.2, python-dotenv 1.2.2 \\
 \hline
@@ -347,7 +346,7 @@ Kafka & apache/kafka 4.1.2 (brokers), confluent-kafka 2.15.1 (latest) with librd
 \hline
 Data movement & ExpeDat \texttt{servedat} 1.23.1 (Nov 2025) with MTP 4.5.3 (proprietary, 21-day free trial); etransfer v2.0 (JIVE, open source, built from source) bundling libudt5ab, libsrt5ab, argparse11 and fkyaml \\
 \hline
-Database and file storage & PostgreSQL 18 (18.6), psycopg and psycopg-binary 3.3.4, postgres-exporter v0.20.1 (latest), SeaweedFS 4.40, boto3 and botocore 1.34.162, numpy 2.4.6 (latest), pandas 3.0.6 (latest), matplotlib 3.11.2, pillow 12.2.0, argon2-cffi 25.1.0, argon2-cffi-bindings 25.1.0, cffi 2.0.0, pycparser 3.0 \\
+Database and Object Store & PostgreSQL 18 (18.6), psycopg and psycopg-binary 3.3.4, postgres-exporter v0.20.1 (latest), SeaweedFS 4.40, boto3 and botocore 1.34.162, numpy 2.4.6 (latest), pandas 3.0.6 (latest), matplotlib 3.11.2, pillow 12.2.0, argon2-cffi 25.1.0, argon2-cffi-bindings 25.1.0, cffi 2.0.0, pycparser 3.0 \\
 \hline
 Testing and load testing & pytest 9.1.1, pytest-django 4.14.0, pytest-cov 7.1.0, pytest-asyncio 1.4.0, k6 0.54.0 \\
 \hline
@@ -377,11 +376,11 @@ Infrastructure and monitoring & Traefik v3.7, Docker Desktop 29.7.2, Docker Comp
 
 \subsection*{Improvements}
 
-  Moving from cloud hosting to in-house infrastructure is worth evaluating. The main reason is full control over the sequence of events, with the ability to configure the servers, network, and services however the project requires. The cloud droplets also limit the available CPU, RAM, and storage. The trade-offs are cost, maintenance, reachability from VLBA sites, and security.
+  Moving from cloud hosting to in-house infrastructure is worth evaluating. The main reason is full control over the sequence of events, with the ability to configure the servers, network, and services however the project requires. The cloud Droplets also limit the available CPU, RAM, and storage. The trade-offs are cost, maintenance, reachability from VLBA sites, and security.
 
-  Kafka runs out of memory on the 2 GB droplets. Each node uses about 800 MB of RAM, and with no swap configured, the Linux out-of-memory killer stopped two of the three Kafka nodes. The fixes are more RAM or a swap file, and restart policies on the Kafka containers.
+  Kafka runs out of memory on the 2 GB Droplets. Each node uses about 800 MB of RAM, and with no swap configured, the Linux out-of-memory killer stopped two of the three Kafka nodes. The fixes are more RAM or a swap file, and restart policies on the Kafka containers.
 
-  The capacity of the data transfer path is not yet characterized. Concurrent overlap of transfers was never measured, and no real-network bandwidth or latency numbers exist. During testing, a limit on the number of concurrent transfers was suspected, but there is no direct proof of one. If such a limit exists, it could come from the resources retained on the droplet rather than from ExpeDat itself. Measuring CPU, RAM, and disk usage with the existing Prometheus and Grafana dashboards while increasing the number of simultaneous transfers would show which.
+  The capacity of the data transfer path is not yet characterized. Concurrent overlap of transfers was never measured, and no real-network bandwidth or latency numbers exist. During testing, a limit on the number of concurrent transfers was suspected, but there is no direct proof of one. If such a limit exists, it could come from the resources retained on the Droplet rather than from ExpeDat itself. Measuring CPU, RAM, and disk usage with the existing Prometheus and Grafana dashboards while increasing the number of simultaneous transfers would show which.
 
   The shared volume needs periodic cleaning, because repeated runs can exhaust the simulated 5 GB.
 
