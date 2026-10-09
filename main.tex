@@ -23,8 +23,9 @@
 
 \textbf{Ultimate goal of why we built this prototype: to explore feasible design options for ngRadar inter-site data communication, so that the project can make informed architectural decisions about public-network data movement, remote observing, and real-time feedback between GBO, VLBA sites, DSOC, and observers or operators. Also to create a system that could be used in other areas of the observatory, outside just the context of ngRadar}
 
-Interferometers used in Radio Astronomy require real time communication between antenna sites and new instruments, such as the ngVLA, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
-This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system, but could be implemented into any radio astronomy observatory. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
+This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use in the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implement into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible for when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{get requirements from conops/other resources, list some here}. The software architecture is entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
+
+Interferometers used in Radio Astronomy require real time communication between instruments, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
 
 %=====================================================================================
 
@@ -59,7 +60,7 @@ This memo details the software system architecture (Section \ref{System Architec
 
   \begin{figure}[h!] 
 \centering 
-\includegraphics[width=0.90\columnwidth]{figures/ngRadar_SysCom_C4.png} 
+\includegraphics[width=1\columnwidth]{figures/ngRadar_SysCom_C4.png} 
     \caption{System architecture} 
     \label{fig:C4}
 \end{figure}
@@ -94,11 +95,11 @@ This memo details the software system architecture (Section \ref{System Architec
 \subsection*{Desktop Application versus Web Application}
   To enable system communication across NRAO sites, the software needs to be compatible with various types of machines and operating systems. For use in ngRadar, the software would need to communicate across the continental United States, Hawaii, and the Caribbean.
     
-  The team initially investigated developing software which would be installed locally on the computers of NRAO employees, and transmit data over the internet to the software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all 10 of the VLBA sites. 
+  An initial investigation was completed to evaluate the viability of developing locally installed desktop applicatons, which would transmit data over the internet to software at other locations. However, this would have required compiling and building an application for all three major operating systems. Therefore, it was decided that the software would not be locally hosted, and instead function as a web application. This website would be primarily hosted on servers at DSOC, with other software components hosted at the Green Bank Observatory and on all ten of the VLBA sites. 
 
 \subsection*{Backend Frameworks}
 
-There were three frameworks our team investigated - Flask, FastAPI, and Django.
+Three backend frameworks were investigated for this prototype - Flask, FastAPI, and Django.
   Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask also does not have built in authentication or adminstrative features.
 
   FastAPI provides high-speed, and asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework we investigated and includes features such as built in authentication, python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built in functionality, and developers can add libraries with additional features they need.
@@ -119,6 +120,14 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
   Ultimately the team decided to select Kafka, as it has many highlights: extensive use across the industry, high reliability and customization when sending or receiving messages, and the large amount of documentation avaliable for it. One of the most important features of Kafka for our prototype is the publish/subscribe model, and the ability for multiple consumers to retrieve information from a single producer. 
   
   Kafka has numerous options for online broker hosting, and initially the website was set up to work with Confluent Cloud. However, the team chose locally hosted Kafka brokers due to lower cost, increased flexibility, and more control over the data on those brokers.
+
+\subsection*{Docker}
+
+In this software prototype, Docker containers were used to store and run all of the major software components, which is known as a microservices architecture. This made development and deployment of the software more flexible, as the code for individual services could
+be changed without altering another container, it helped separate the codebase into smaller pieces, and made it easier to replace individual services in our code with alternatives if the team decided changes were necessary. Microservices also improved fault tolerance for the
+website - during testing, there were several times we noticed that a container had stopped working. This did cause some features to stop working correctly, but did not cause the website to crash as a whole.
+
+  Containers were also used to ensure that this website could be run across multiple machines for local development and debugging, but also perform reliably when run on a cloud-based or locally hosted server. To accomplish this, we used Docker Containers to isolate software components and their dependencies used on our website. This would ensure that any computer which has the Docker Engine - a server responsible for managing the containers - can run this web application and it will perform consistently.
 
 \subsection*{Object Store}
 
@@ -142,7 +151,7 @@ RabbitMQ was also considered as a broker option; it has the lowest message laten
 
   While developing this website, the team needed a way to test our simulated data from geographically distributed locations. If this software architecture was implemented to work with telescope hardware, it would be hosted using servers on site at NRAO locations across the county. The website could then be used to communicate between observatory sites, and inform remote viewers of real-time events during an active observation.
 
-  There were two platforms the chose to host the website on during this process, the first was Render and the second was Digital Ocean. Render offers a free option for hosting small websites with very limited performance - 1GB of storage, 256 MB of RAM, and 1/10th of a virtual CPU. This offered a way for the team to demonstrate the website to other observatory personel over the public internet, but performance was very slow. Render offers paid subscriptions starting at $7, but the least expensive plan which includes 1 virtual CPU is $25 per month, and includes only 2GB of RAM. The limited performance and expensive cost of using Render led the team to stop using it and explore alternatives.
+  There were two platforms the chose to host the website on during this process, the first was Render and the second was Digital Ocean. Render offers a free option for hosting small websites with very limited performance - 1GB of storage, 256 MB of RAM, and 1/10th of a virtual CPU. This offered a way for the team to demonstrate the website to other observatory personel over the public internet, but performance was very slow. Render offers paid subscriptions starting at \$7, but the least expensive plan which includes 1 virtual CPU is \$25 per month, and includes only 2GB of RAM. The limited performance and expensive cost of using Render led the team to stop using it and explore alternatives.
   
   DigitalOcean is a cloud hosting platform, which sells access to Virtual Machines, known as "Droplets" at various locations worldwide. After testing the performance of a single Droplet, the team set up Droplets on servers located in New York, San Francisco, London, Bangalore, and Sydney to run our website containers. Digital Ocean offers Droplets with varying performance levels, and our team purchased monthly subscriptions to four entry level droplets, and one mid-tier droplet. Each entry level Droplet offered 1 virtual CPU (vCPU), 2GB of RAM, 50GB of storage, and costs \$12 per month. The mid tier droplet has 4 vCPUs, 8GB of RAM, 160GB of storage, and costs \$48 per month. The portion of our website representing DSOC contains the software tools which managed the SQL database, Kafka brokers, E-transfer (or ExpeDat) server, SeaweedFS file store, and various performance monitoring tools. To perform at an acceptable speed and support multiple website users, the team found that DSOC needed to use this mid-tier droplet. The other portions of our website, including the GBT and VLBA simulators, were spread out evenly across the 5 Droplets. Since migrating the website to work on Digital Ocean, performance has significantly improved, even when many people  are using it at once. Currently, this prototype website costs \$96 per month to operate on a cloud hosted service, but that cost will only exist during the development phase.
 
