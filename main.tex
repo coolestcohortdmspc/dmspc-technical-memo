@@ -21,27 +21,23 @@
 
 \section*{Abstract}
 
-This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use for the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implemented into any NRAO system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible when this system gets implemented into production. Requirements for the design options that were adhered to include public-network data movement, \textbf{[get requirements from conops/other resources, list some here]}. The final software architecture is the result of experimenting with the best options for observation data transport efficiency, web application efficiency, message reliability, retention, storage, reproducability across sites, and more. 
-
-\textbf{[Possibly move pieces of this paragraph to Intro?]}entirely event-driven while each event is also saved in a central database, with every event visible to users on a public website. The prototype has been tested with simulated observation data, and has demonstrated the ability to work remotely across geographically dispersed sites. 
-Interferometers used in Radio Astronomy require real time communication between instruments, and ngRadar would strongly benefit from system communication between observation planning, telescope control, and data transport software. Currently, there is no direct connection between these software components and NRAO personel must communicate directly to plan observations across sites.
+This software documents a real-time data transport architecture developed by the NRAO, and demonstrates a possible use for the future ngRadar system; while ngRadar was selected as a test case, the ultimate goal is to have a real-time data transport system that can be implemented into any NRAO system. The broader scope of this prototype should be kept in mind, even while this memo uses the context of the ngRadar system. The purpose of this prototype is to explore feasible design options, which will provide a proof-of-concept of what works and what is possible when this system gets implemented into production. Some requirements for the design options that were adhered to include public-network movement of real-time metadata and data products, closed-loop feedback, remote observing and monitoring, integration of all observing sites involved, and system health maintenance interface(s). The final software architecture is the result of experimenting with the best options for observation data transport efficiency, web application efficiency, message reliability, retention, and storage, reproducability across sites, and more. 
 
 %=====================================================================================
 
 \section{Introduction} \label{Introduction}
 
-\textbf{Note from Nicole: I want it to be clear that yes, our prototype was devleoped in the context of ngRadar, so we will stick with that terminology, BUT the goal of this prototyping cohort was to investigate tools that could be used for several projects at NRAO.}
-The ngRadar system will utilize the Green Bank Telescope as a high powered transmitter, capable of transmitting a 13.7 GHz frequency at 500kW, and be able to image objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive those signals, before being sent to the Domenici Science Operations Center (DSOC) for data processing. During test observations with the low powered transmitter, scientific staff had to communicate over the phone with telescope operators across the GBT and VLBA sites to coordinate planned observations, including observation targets and times.
+The ngRadar system will utilize the Green Bank Telescope (GBT) as a high-powered transmitter, capable of signaling objects 10 times farther than the lunar distance. The Very Long Baseline Array (VLBA) will be used to receive the signal data, before being sent to the Domenici Science Operations Center (DSOC) for data processing. The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations (in this use case, between the GBT, VLBA, and DSOC). 
 
-  The Real-Time System Communication Prototype was developed to demonstrate system communications between remote NRAO locations. This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. Although this software could be implemented on many NRAO observatories, the ngRadar system was chosen for this team to demonstrate the prototype's proof of concept.
+All geographically dispersed NRAO systems would strongly benefit from one standardized system of real-time communication. Methods of sharing ephemerides, updating pointing information, and accessing quick-look products are currently not standardized; this information gets scattered across many platforms during an observation. This prototype aims to centralize all relevant real-time observation information and to provide it to users as efficiently as possible.
 
-This memo details the software system architecture (Section \ref{System Architecture}), design decisions (Section \ref{Design Decisions}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}). \textbf{Needs Laura's stamp of approval.}
+This paper documents an event-driven, web-based application for remote viewing of an active observation across geographically dispersed sites. The prototype has been tested with simulated observation data, and has demonstrated the ability to successfully meet all system requirements. This memo details the software system architecture (Section \ref{System Architecture}), design decisions (Section \ref{Design Decisions}), software components and technologies chosen (Section \ref{Software Stack}), and other dependencies required by the System Communication Prototype (Section \ref{Dependencies}).
 
 %=====================================================================================
 
 \section{System Architecture} \label{System Architecture}
 
-  Figure \ref{fig:context} depicts the ngRadar System Communication Prototype architecture at a high level. For simplicity, the tools related to monitoring and performance testing the prototype will be considered as a separate software system, as the system communication prototype does not rely on those services to function. These tools are outlined in detail in Section \ref{Software Stack}.
+  Figure \ref{fig:context} depicts the ngRadar System Communication Prototype architecture at a high level. Users interact with the system to view observation real-time data and request waveforms. For simplicity, the tools related to monitoring and performance testing the prototype will be considered as a separate software system, as the system communication prototype does not rely on those services to function. These tools inlcude GUIs for monitoring Docker containers and other servicse, performance testing and metric visualiation, and more, all of which is detailed in Section \ref{Software Stack}.
 
 \begin{figure}[h!] 
 \centering 
@@ -50,13 +46,25 @@ This memo details the software system architecture (Section \ref{System Architec
     \label{fig:context}
 \end{figure}
 
-Figure \ref{fig:container} shows the container-level view of the System Communication Prototype. 
+Figure \ref{fig:container} shows the container-level view of the System Communication Prototype. Users reach the public website, exposed by a reverse proxy, to view the latest updates regarding an observation and request different waveforms to be transmitted byt the GBT. Apache Kafka is the high-throughout mesage broker of the system, storing and transporting messages that trigger workflow items (Kafka functionality detailed in Section \ref{Software Stack}). The web application container is capable of sending to and receiving messages from the broker to trigger workflow events and receive updates. The database consumer container can also receive messages from the broker and is responsible for saving records to the databse and populating the history table on the UI. 
 
 \begin{figure}[h!] 
 \centering 
 \includegraphics[width=0.85\columnwidth]{figures/containerdiagram.png} 
     \caption{Container diagram} 
     \label{fig:container}
+\end{figure}
+
+The NRAO site simulators (GBT, VLBA, and DSOC) are all Python programs that perform site specific logic. They receive messages from the broker that trigger certain events, depending on the key of the message. 
+
+
+Figure \ref{fig:sequence} shows the sequence of events that occurs when a user submits a waveform on the UI. The 
+
+\begin{figure}[h!] 
+\centering 
+\includegraphics[width=0.85\columnwidth]{figures/sequencediagram.png} 
+    \caption{Sequence diagram depicting the triggered events throughout the system.} 
+    \label{fig:sequence}
 \end{figure}
 
 
@@ -110,9 +118,9 @@ Figure \ref{fig:container} shows the container-level view of the System Communic
 \subsection*{Backend Frameworks}
 
 Three backend frameworks were investigated for this prototype - Flask, FastAPI, and Django.
-  Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask also does not have built in authentication or adminstrative features.
+  Flask is well-known for its simplicity and low usage of computing resources. It is also flexible and modular, allowing developers to modify the framework and integrate additional software components for added functionality. However, Flask only supports using synchronous communication between the server and framework, meaning processes can only run one-at-a-time. Flask also does not have built-in authentication or adminstrative features.
 
-  FastAPI provides high-speed, asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework out of the three that were investigated and includes features such as built-in authentication, Python code completion to speed up development, and automatic documentation for program APIs. It includes a modest number of built-in functionality, and developers can add libraries with additional features they need.
+  FastAPI provides high-speed, asynchronous, non-blocking communication in a relatively lightweight framework. It is the newest framework out of the three that were investigated and includes features such as built-in authentication, Python code completion to speed up development, and automatic documentation for program APIs. It includes a modest amount of built-in functionality, and developers can add libraries with additional features they need.
 
   Django is a framework with a large amount of built-in functionality including an adminstrative dashboard, user authentication, HTML form processing, an object-relational mapper for database interaction, and a model-template-view architecture to seperate program logic from what the user can see. It is capable of running large web applications with many users. By default, Django runs with synchronous communication, but libraries that add asynchronous communication are avaliable.
 
